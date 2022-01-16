@@ -1,0 +1,13 @@
+# BAR CLAMP
+spawn_mesh: true
+object_name: "object"
+object_mesh_file: "package://deep_grasp_task/meshes/objects/bar_clamp.dae"
+object_dimensions: [0.06, 0.12, 0.04]  # [length, width, height]
+object_pose: [0.5, -0.25, 0.12, 0, 0, 0]
+
+# STRAWBERRY
+# spawn_mesh: true
+# object_name: "object"
+# object_mesh_file: "package://deep_grasp_task/meshes/objects/strawberry.dae"
+# object_dimensions: [0.02]  # [radius]
+# object_pose: [0.5, 0, 0., 0, 0, 0]

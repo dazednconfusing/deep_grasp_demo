@@ -59,10 +59,10 @@ namespace moveit_task_constructor_gpd
 constexpr char LOGNAME[] = "grasp_pose_detection";
 
 /**
-* @brief Generates grasp poses for a generator stage with MTC
-* @details Interfaces with the GPD lib using ROS messages and interfaces
-*          with MTC using an Action Server
-*/
+ * @brief Generates grasp poses for a generator stage with MTC
+ * @details Interfaces with the GPD lib using ROS messages and interfaces
+ *          with MTC using an Action Server
+ */
 class GraspDetection
 {
 public:
@@ -76,43 +76,43 @@ public:
 
 private:
   /**
-  * @brief Loads parameters for action server, GPD, and relevant transformations
-  */
+   * @brief Loads parameters for action server, GPD, and relevant transformations
+   */
   void loadParameters();
 
   /**
-  * @brief Initialize action server callbacks and GPD
-  * @details The point cloud (frame: panda_link0) is loaded from a file and
-  *          the camera's origin relative to the point cloud is assumed to be at (0,0,0).
-  */
+   * @brief Initialize action server callbacks and GPD
+   * @details The point cloud (frame: panda_link0) is loaded from a file and
+   *          the camera's origin relative to the point cloud is assumed to be at (0,0,0).
+   */
   void init();
 
   /**
-  * @brief Action server goal callback
-  * @details Accepts goal from client and samples grasp candidates
-  */
+   * @brief Action server goal callback
+   * @details Accepts goal from client and samples grasp candidates
+   */
   void goalCallback();
 
   /**
-  * @brief Preempt callback
-  * @details Preempts goal
-  */
+   * @brief Preempt callback
+   * @details Preempts goal
+   */
   void preemptCallback();
 
   /**
-  * @brief Samples grasp candidates using GPD
-  * @details Compose grasp candidates, the candidates are sent back to the client
-  *          using the feedback message. Only candidates with a positive grasp
-  *          score are used. If there is at least one candidate with a positive
-  *          score the result is set to success else it is a failure.
-  */
+   * @brief Samples grasp candidates using GPD
+   * @details Compose grasp candidates, the candidates are sent back to the client
+   *          using the feedback message. Only candidates with a positive grasp
+   *          score are used. If there is at least one candidate with a positive
+   *          score the result is set to success else it is a failure.
+   */
   void sampleGrasps();
 
   /**
-  * @brief Point cloud call back
-  * @param msg - point cloud message
-  * @details Segments objects from table plane
-  */
+   * @brief Point cloud call back
+   * @param msg - point cloud message
+   * @details Segments objects from table plane
+   */
   void cloudCallback(const sensor_msgs::PointCloud2::ConstPtr& msg);
 
 private:

@@ -2,15 +2,16 @@
 <launch>
   <include file="$(find gazebo_ros)/launch/empty_world.launch" >
     <arg name="verbose" value="false"/>
-    <arg name="paused" value="false"/>
+    <arg name="paused" value="true"/>
     <arg name="gui" value="true"/>
   </include>
+  <arg name="object" default="cylinder"/>
 
   <!-- Point cloud data collection -->
-  <arg name="cartesian_limits" default="true" doc="specify cartesian limits on cloud in frame of optical link"/>
+  <arg name="cartesian_limits" default="false" doc="specify cartesian limits on cloud in frame of optical link"/>
   <arg name="remove_table" default="true" doc="segment table plane from object"/>
-  <arg name="xyz_lower_limits" default="[-0.2, -0.2, 0.0]" doc="lower x,y,z cartesian limits on cloud"/>
-  <arg name="xyz_upper_limits" default="[0.2, 0.2, 0.75]" doc="upper x,y,z cartesian limits on cloud"/>
+  <arg name="xyz_lower_limits" default="[-0.5, -0.3, 0.0]" doc="lower x,y,z cartesian limits on cloud"/>
+  <arg name="xyz_upper_limits" default="[0.5, 0.3, 0.75]" doc="upper x,y,z cartesian limits on cloud"/>
 
   <arg name="point_cloud_topic" value="/camera/depth/color/points" doc="point cloud topic name"/>
   <arg name="cloud_dir" value="$(find moveit_task_constructor_gpd)/data/pointclouds/" doc="directory to point clouds"/>
@@ -44,11 +45,21 @@
   <node name="spawn_gazebo_camera" pkg="gazebo_ros" type="spawn_model"
      args="-urdf -param robot_description -model camera" respawn="false" output="screen" />
 
+  <arg name="z" if="$(eval arg('object') == 'cylinder')" value="0.175"/>
+   <arg name="z" if="$(eval arg('object') == 'barclamp')" value="0.12"/>
+   <arg name="table_args" default="x:=0.5 y:=0 z:=0.05 l:=0.4 w:=0.5 h:=0.1"/>
+   <param name="table_description" command="$(find xacro)/xacro $(arg table_args) '$(find deep_grasp_task)/urdf/objects/table.urdf.xacro'" />
+<node name="spawn_gazebo_table" pkg="gazebo_ros" type="spawn_model"
+     args="-urdf -param table_description -model table" respawn="false" output="screen" />
   <!-- spawn object -->
   <!-- cylinder -->
-  <param name="object_description" command="$(find xacro)/xacro '$(find deep_grasp_task)/urdf/objects/cylinder.urdf.xacro'"/>
+  <param name="object_description" command="$(find xacro)/xacro '$(find deep_grasp_task)/urdf/objects/$(arg object).urdf.xacro'"/>
   <node name="spawn_gazebo_object" pkg="gazebo_ros" type="spawn_model"
-     args="-urdf -param object_description -model cylinder -x 0.5 -y -0.25 -z 0.125" respawn="false" output="screen" />
+     args="-urdf -param object_description -model object -x 0.35 -y -0.2 -z $(arg z)" respawn="false" output="screen" />
+  
+     <!-- <include  file="$(find interbotix_xslocobot_moveit)/launch/moveit_rviz.launch"> -->
+  <!-- <include ns="locobot" file="$(find interbotix_xslocobot_moveit)/launch/moveit_rviz.launch"> -->
+  <!-- </include> -->
 
   <!-- bar clamp -->
  <!-- <param name="object_description" command="$(find xacro)/xacro '$(find deep_grasp_task)/urdf/objects/bar_clamp.urdf.xacro'"/>

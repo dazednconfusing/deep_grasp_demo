@@ -99,13 +99,13 @@ class GraspServer():
 
 
         # sends data to stdin, waits until process reaches end of file
-        proc_out = proc.communicate(req.color_img_file_path + '\n' +
+        proc_out = proc.communicate((req.color_img_file_path + '\n' +
                                     req.depth_img_file_path + '\n' +
                                     self.sampled_grasps_file + '\n' +
                                     self.camera_calib_intr + '\n' +
                                     self.model_name + '\n' +
                                     self.model_dir + '\n' +
-                                    self.model_params + '\n')[0]
+                                    self.model_params + '\n').encode("utf-8"))[0]
         # end subproces
         ######################################################################
 

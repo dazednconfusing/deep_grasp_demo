@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="cylinder">
 
-  <xacro:property name="r" value="0.02" />
-  <xacro:property name="h" value="0.25" />
+  <xacro:property name="r" value="0.015" />
+  <xacro:property name="h" value="0.15" />
 
-  <link name="cylinder_link">
+  <link name="object_link">
     <visual>
       <geometry>
         <cylinder length="${h}" radius="${r}"/>
@@ -26,7 +26,7 @@
     </collision>
   </link>
 
-  <gazebo reference="cylinder_link">
+  <gazebo reference="object_link">
     <!-- <material>Gazebo/Grey</material> -->
     <dampingFactor>0.005</dampingFactor>
     <kp>1000000</kp>

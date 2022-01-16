@@ -47,9 +47,8 @@ import pickle
 import numpy as np
 from matplotlib import pyplot as plt
 
-from autolab_core import YamlConfig, Logger
-from perception import (BinaryImage, CameraIntrinsics, ColorImage, DepthImage,
-                        RgbdImage)
+from autolab_core import (YamlConfig, Logger, BinaryImage, CameraIntrinsics, 
+ColorImage, DepthImage, RgbdImage)
 from visualization import Visualizer2D as vis
 
 from gqcnn.grasping import (RobustGraspingPolicy,
@@ -144,6 +143,7 @@ if __name__ == "__main__":
 
     # Query policy for all sampled grasps
     grasp_candidates, q_values = policy.action_set(state)
+
 
     candidate_array = []
     for i in range(len(grasp_candidates)):
