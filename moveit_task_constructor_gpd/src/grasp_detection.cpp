@@ -138,10 +138,10 @@ void GraspDetection::sampleGrasps()
   std::vector<unsigned int> grasp_id;
   for (unsigned int i = 0; i < grasps.size(); i++)
   {
-    if (grasps.at(i)->getScore() > 0.0)
-    {
-      grasp_id.push_back(i);
-    }
+    // if (grasps.at(i)->getScore() > 0.0)
+    // {
+    grasp_id.push_back(i);
+    // }
   }
 
   if (grasp_id.empty())
