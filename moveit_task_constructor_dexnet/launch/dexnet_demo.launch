@@ -12,8 +12,8 @@
   <arg name="sampled_grasps" value="$(find moveit_task_constructor_dexnet)/data/grasps/grasp_candidates.bin" doc="file path to pickled grasp candidates"/>
   <arg name="image_dir" value="$(find moveit_task_constructor_dexnet)/data/images/" doc="directory to save images"/>
 
-  <arg if="$(arg load_images)" name="color_image_file" value="rgb_new_cylinder.png" doc="color image file"/>
-  <arg if="$(arg load_images)" name="depth_image_file" value="depth_new_cylinder.png" doc="depth image file"/>
+  <arg if="$(arg load_images)" name="color_image_file" value="new_cylinder_rgb.png" doc="color image file"/>
+  <arg if="$(arg load_images)" name="depth_image_file" value="new_cylinder_depth.png" doc="depth image file"/>
   <!-- <arg if="$(arg load_images)" name="color_image_file" value="rgb_clamp.png" doc="color image file"/>
   <arg if="$(arg load_images)" name="depth_image_file" value="depth_clamp.png" doc="depth image file"/> -->
 

@@ -3,6 +3,7 @@
  <arg name="object" default="cylinder" />
   <arg name="pcd" default="" />
  <arg name="debug" default="false" />
+ <arg name="task" default="deep_grasp_demo"/>
   <arg unless="$(arg debug)" name="launch_prefix" value="" />
   <arg     if="$(arg debug)" name="launch_prefix" value="gdb -ex run --args" />
   <arg name="load_cloud" default="true" doc="load point cloud from file"/>
@@ -16,7 +17,7 @@
   <arg name="path_to_gpd_config" value="$(find moveit_task_constructor_gpd)/config/gpd_config.yaml" doc="path to GPD config and gripper params file"/>
   
   <!-- Run MTC pick and place -->
-  <node name="mtc_tutorial" pkg="deep_grasp_task" type="deep_grasp_demo" output="screen"
+  <node name="mtc_tutorial" pkg="deep_grasp_task" type="$(arg task)" output="screen"
     launch-prefix="$(arg launch_prefix)">
       <param name="execute" value="true" />
       <param name="action_name" value="$(arg action_name)"/>

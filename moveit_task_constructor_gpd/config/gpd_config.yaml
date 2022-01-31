@@ -41,10 +41,12 @@ weights_file = /home/sebastian/simply_ws/src/gpd/models/lenet/15channels/params/
 voxelize = 1
 voxel_size = 0.003
 remove_outliers = 0
-workspace = -1.0 1.0 -1.0 1.0 -1.0 1.0
+workspace = -0.25 -0.16 -0.06 0.06 0.45 0.75
+# workspace = -1.0 1.0 -1.0 1.0 -1.0 1.0
 # workspace = -2.0 2.0 -2.0 2.0 -2.0 2.0
-camera_position = 0.5 0 0.7
+# camera_position = 0.5 0 0.7
 # camera_position = 0.15 0 0.04
+camera_position = 0.084 0.017 0.522
 sample_above_plane = 0
 
 # Grasp candidate generation
@@ -53,7 +55,7 @@ sample_above_plane = 0
 #   nn_radius: the radius for the neighborhood search
 #   num_orientations: the number of robot hand orientations to evaluate
 #   rotation_axes: the axes about which the point neighborhood gets rotated
-num_samples = 500
+num_samples = 300
 num_threads = 4
 nn_radius = 0.01
 num_orientations = 16
@@ -74,9 +76,11 @@ deepen_hand = 1
 #   workspace_grasps: dimensions of a cube centered at origin of point cloud; should be smaller than <workspace>
 min_aperture = 0.0
 max_aperture = 0.04
+# workspace_graps = -1.0 1.0 -1.0 1.0 -1.0 1.0
+workspace_grasps = -0.25 -0.16 -0.06 0.06 0.3 0.75
 # workspace_grasps = -.75 .75 -.5 .5 -.5 .5
-workspace_grasps = -1 1 -1 1 -1 1
-# workspace_grasps = -2 2 -2 2 -2 2
+# workspace_grasps = 0.1 0.2 -0.05 0.05 0 0.65
+# workspace_grasps = -0.3 -0.1 0 0.2 0 1
 
 
 
@@ -84,7 +88,7 @@ workspace_grasps = -1 1 -1 1 -1 1
 #   filter_approach_direction: turn filtering on/off
 #   direction: the direction to compare against
 #   angle_thresh: angle in radians above which grasps are filtered
-filter_approach_direction = 1 #1
+filter_approach_direction = 0 #1
 direction = 1 0 0
 thresh_rad = 2.0
 
@@ -110,4 +114,4 @@ plot_candidates = 0
 plot_filtered_candidates = 0
 plot_valid_grasps = 0
 plot_clustered_grasps = 0
-plot_selected_grasps = 0
+plot_selected_grasps = 1

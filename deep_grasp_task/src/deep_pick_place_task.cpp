@@ -157,6 +157,35 @@ void DeepPickPlaceTask::init()
     stage->setGoal(hand_open_pose_);
     t.add(std::move(stage));
   }
+  // // move down
+  // {
+  //   auto stage = std::make_unique<stages::MoveRelative>("go to mid", cartesian_planner);
+  //   stage->properties().set("marker_ns", "approach_object");
+  //   stage->properties().set("link", hand_frame_);
+  //   stage->properties().configureInitFrom(Stage::PARENT, { "group" });
+  //   stage->setMinMaxDistance(0.25, 0.3);
+
+  //   // Set hand forward direction
+  //   geometry_msgs::Vector3Stamped vec;
+  //   vec.header.frame_id = hand_frame_;
+  //   vec.vector.z = -1.0;
+  //   stage->setDirection(vec);
+  //   t.add(std::move(stage));
+  // }
+  // // turn
+  // {
+  //   auto stage = std::make_unique<stages::MoveRelative>("turn mid", cartesian_planner);
+  //   stage->properties().set("marker_ns", "approach_object");
+  //   stage->properties().set("link", hand_frame_);
+  //   stage->properties().configureInitFrom(Stage::PARENT, { "group" });
+
+  //   // Set hand forward direction
+  //   geometry_msgs::TwistStamped twist;
+  //   twist.header.frame_id = "world";
+  //   twist.twist.angular.z = -3 * M_PI / 4.;
+  //   stage->setDirection(twist);
+  //   t.add(std::move(stage));
+  // }
 
   /****************************************************
    *                                                  *
@@ -181,6 +210,17 @@ void DeepPickPlaceTask::init()
     auto grasp = std::make_unique<SerialContainer>("pick object");
     t.properties().exposeTo(grasp->properties(), { "eef", "hand", "group", "ik_frame" });
     grasp->properties().configureInitFrom(Stage::PARENT, { "eef", "hand", "group", "ik_frame" });
+
+    /****************************************************
+---- *               Allow Collision (hand object)   *
+  ***************************************************/
+    {
+      auto stage = std::make_unique<stages::ModifyPlanningScene>("allow collision (hand,object)");
+      stage->allowCollisions(
+          object, t.getRobotModel()->getJointModelGroup(hand_group_name_)->getLinkModelNamesWithCollisionGeometry(),
+          true);
+      grasp->insert(std::move(stage));
+    }
 
     /****************************************************
   ---- *               Approach Object                    *
@@ -220,17 +260,6 @@ void DeepPickPlaceTask::init()
       wrapper->properties().configureInitFrom(Stage::PARENT, { "eef", "group" });
       wrapper->properties().configureInitFrom(Stage::INTERFACE, { "target_pose" });
       grasp->insert(std::move(wrapper));
-    }
-
-    /****************************************************
-  ---- *               Allow Collision (hand object)   *
-     ***************************************************/
-    {
-      auto stage = std::make_unique<stages::ModifyPlanningScene>("allow collision (hand,object)");
-      stage->allowCollisions(
-          object, t.getRobotModel()->getJointModelGroup(hand_group_name_)->getLinkModelNamesWithCollisionGeometry(),
-          true);
-      grasp->insert(std::move(stage));
     }
 
     /****************************************************
@@ -293,6 +322,21 @@ void DeepPickPlaceTask::init()
     // Add grasp container to task
     t.add(std::move(grasp));
   }
+
+  // turn
+  // {
+  //   auto stage = std::make_unique<stages::MoveRelative>("turn back", cartesian_planner);
+  //   stage->properties().set("marker_ns", "approach_object");
+  //   stage->properties().set("link", hand_frame_);
+  //   stage->properties().configureInitFrom(Stage::PARENT, { "group" });
+
+  //   // Set hand forward direction
+  //   geometry_msgs::TwistStamped twist;
+  //   twist.header.frame_id = "world";
+  //   twist.twist.angular.z = M_PI;
+  //   stage->setDirection(twist);
+  //   t.add(std::move(stage));
+  // }
 
   /******************************************************
    *                                                    *
@@ -374,17 +418,6 @@ void DeepPickPlaceTask::init()
     }
 
     /******************************************************
-  ---- *          Forbid collision (hand, object)        *
-     *****************************************************/
-    {
-      auto stage = std::make_unique<stages::ModifyPlanningScene>("forbid collision (hand,object)");
-      stage->allowCollisions(
-          object_name_,
-          t.getRobotModel()->getJointModelGroup(hand_group_name_)->getLinkModelNamesWithCollisionGeometry(), false);
-      place->insert(std::move(stage));
-    }
-
-    /******************************************************
   ---- *          Detach Object                             *
      *****************************************************/
     {
@@ -399,13 +432,23 @@ void DeepPickPlaceTask::init()
     {
       auto stage = std::make_unique<stages::MoveRelative>("retreat after place", cartesian_planner);
       stage->properties().configureInitFrom(Stage::PARENT, { "group" });
-      stage->setMinMaxDistance(.1, .3);
+      stage->setMinMaxDistance(.05, .3);
       stage->setIKFrame(hand_frame_);
       stage->properties().set("marker_ns", "retreat");
       geometry_msgs::Vector3Stamped vec;
       vec.header.frame_id = hand_frame_;
       vec.vector.x = -1.0;
       stage->setDirection(vec);
+      place->insert(std::move(stage));
+    }
+    /******************************************************
+---- *          Forbid collision (hand, object)        *
+   *****************************************************/
+    {
+      auto stage = std::make_unique<stages::ModifyPlanningScene>("forbid collision (hand,object)");
+      stage->allowCollisions(
+          object_name_,
+          t.getRobotModel()->getJointModelGroup(hand_group_name_)->getLinkModelNamesWithCollisionGeometry(), false);
       place->insert(std::move(stage));
     }
 

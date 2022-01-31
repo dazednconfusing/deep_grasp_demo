@@ -1,7 +1,9 @@
 # Collision object for picking
 # CYLINDER object specifications
 spawn_mesh: false
-object_name: "object"
+spawn_object: true
+# object_name: "object"
+object_name: "mustard"
 object_dimensions: [0.15, 0.015] # [height, radius]
-object_pose: [0.35, -0.2, 0.1, 0, 0, 0]
+object_pose: [0.55, 0.25, 0.05, 0, 0, 0]
 

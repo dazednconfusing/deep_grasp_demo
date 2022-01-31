@@ -48,8 +48,25 @@ add_executable(deep_grasp_demo
 							 src/deep_pick_place_task.cpp
 )
 
+# Declare a C++ executable
+add_executable(strawberry_demo
+ 							 src/strawberry_demo.cpp
+							 src/strawberry_task.cpp
+)
+# Declare a C++ executable
+add_executable(salad_demo
+ 							 src/salad_demo.cpp
+							 src/salad_task.cpp
+)
+
 # Specify libraries to link a library or executable target against
 target_link_libraries(deep_grasp_demo
+                      ${catkin_LIBRARIES}
+)
+target_link_libraries(strawberry_demo
+                      ${catkin_LIBRARIES}
+)
+target_link_libraries(salad_demo
                       ${catkin_LIBRARIES}
 )
 

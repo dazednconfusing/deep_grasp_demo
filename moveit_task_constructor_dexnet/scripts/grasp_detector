@@ -59,7 +59,7 @@ from gqcnn.utils import GripperMode
 
 
 if __name__ == "__main__":
-
+    Logger.reconfigure_root()
     input_msg = sys.stdin.read().split('\n')
     color_img_filename = input_msg[0]
     depth_img_filename = input_msg[1]
@@ -137,10 +137,10 @@ if __name__ == "__main__":
     # Aggregate color and depth images into a single
     # BerkeleyAutomation/perception `RgbdImage`.
     rgbd_im = RgbdImage.from_color_and_depth(color_im, depth_im)
-
+    print('**Before Policy action set')
     state = RgbdImageState(rgbd_im, camera_intr, segmask=segmask)
     policy = CrossEntropyRobustGraspingPolicy(policy_config)
-
+    print('**After Policy action set')
     # Query policy for all sampled grasps
     grasp_candidates, q_values = policy.action_set(state)
 
