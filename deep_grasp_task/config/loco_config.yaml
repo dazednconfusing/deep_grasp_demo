@@ -45,18 +45,21 @@ bowl_mesh_file: "package://deep_grasp_task/meshes/objects/bowl.dae"
 # Gripper grasp frame transform [x,y,z,r,p,y]
 # grasp_frame_transform: [0, 0, 0.1, 1.571, 0.785, 1.571]
 # grasp_frame_transform: [0.015, 0, 0.05, 0, 0, 0]
-grasp_frame_transform: [0, 0, 0.05, 0, 0, 0]
+grasp_frame_transform: [0, 0, 0, 0, 0, 0]
 
 
 # Place pose [x,y,z,r,p,y]
 # place_pose: [0.5, 0.3, 0, 0, 0, 0]
 # place_pose: [0.65, -0.2, 0.1, 0, 0, 0]
-place_pose: [0.55, 0.25, 0.1, 0, 0, 0]
+grasp_pose: [0.5, 0.23, 0.13, 3.1415, 0, 0]
+place_pose: [0.55, 0.25, 0.125, 0, 0, 0]
+pre_pour_pose: [0.35, 0, 0.3, 0, 0, 0]
+pour_pose: [0.35, 0, 0.3, 3.14, 0, 0]
 place_surface_offset: 0.0001 # place offset from table
 
 # Valid distance range when approaching an object for picking
 approach_object_min_dist: 0.03
-approach_object_max_dist: 0.13
+approach_object_max_dist: 0.1
 
 # Valid height range when lifting an object after pick
 lift_object_min_dist: 0.03

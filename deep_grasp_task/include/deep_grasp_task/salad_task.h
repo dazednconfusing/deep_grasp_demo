@@ -65,6 +65,7 @@
 #include <moveit/task_constructor/solvers/pipeline_planner.h>
 #include <moveit_task_constructor_msgs/ExecuteTaskSolutionAction.h>
 #include <moveit_task_constructor_msgs/SampleGraspPosesAction.h>
+#include <moveit_visual_tools/moveit_visual_tools.h>
 
 namespace deep_grasp_task
 {
@@ -123,7 +124,11 @@ private:
   double lift_object_max_dist_;
 
   // Place metrics
+  geometry_msgs::Pose grasp_pose_;
   geometry_msgs::Pose place_pose_;
+  geometry_msgs::Pose pour_pose_;
+  geometry_msgs::Pose pre_pour_pose_;
   double place_surface_offset_;
+  moveit_visual_tools::MoveItVisualToolsPtr visual_tools_;
 };
 }  // namespace deep_grasp_task

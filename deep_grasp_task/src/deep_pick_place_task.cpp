@@ -416,6 +416,16 @@ void DeepPickPlaceTask::init()
       stage->setGoal(hand_open_pose_);
       place->insert(std::move(stage));
     }
+    /******************************************************
+---- *          Forbid collision (hand, object)        *
+ *****************************************************/
+    {
+      auto stage = std::make_unique<stages::ModifyPlanningScene>("forbid collision (hand,object)");
+      stage->allowCollisions(
+          object_name_,
+          t.getRobotModel()->getJointModelGroup(hand_group_name_)->getLinkModelNamesWithCollisionGeometry(), false);
+      place->insert(std::move(stage));
+    }
 
     /******************************************************
   ---- *          Detach Object                             *
@@ -439,16 +449,6 @@ void DeepPickPlaceTask::init()
       vec.header.frame_id = hand_frame_;
       vec.vector.x = -1.0;
       stage->setDirection(vec);
-      place->insert(std::move(stage));
-    }
-    /******************************************************
----- *          Forbid collision (hand, object)        *
-   *****************************************************/
-    {
-      auto stage = std::make_unique<stages::ModifyPlanningScene>("forbid collision (hand,object)");
-      stage->allowCollisions(
-          object_name_,
-          t.getRobotModel()->getJointModelGroup(hand_group_name_)->getLinkModelNamesWithCollisionGeometry(), false);
       place->insert(std::move(stage));
     }
 
