@@ -86,17 +86,17 @@ moveit_msgs::CollisionObject createTable()
   return object;
 }
 
-moveit_msgs::CollisionObject createObject()
+moveit_msgs::CollisionObject createCylinderObject(const std::string name)
 {
   ros::NodeHandle pnh("~");
   std::string object_name, object_reference_frame;
   std::vector<double> object_dimensions;
   geometry_msgs::Pose pose;
   std::size_t error = 0;
-  error += !rosparam_shortcuts::get(LOGNAME, pnh, "object_name", object_name);
+  error += !rosparam_shortcuts::get(LOGNAME, pnh, name + "_name", object_name);
   error += !rosparam_shortcuts::get(LOGNAME, pnh, "object_reference_frame", object_reference_frame);
-  error += !rosparam_shortcuts::get(LOGNAME, pnh, "object_dimensions", object_dimensions);
-  error += !rosparam_shortcuts::get(LOGNAME, pnh, "object_pose", pose);
+  error += !rosparam_shortcuts::get(LOGNAME, pnh, name + "_dimensions", object_dimensions);
+  error += !rosparam_shortcuts::get(LOGNAME, pnh, name + "_pose", pose);
   rosparam_shortcuts::shutdownIfError(LOGNAME, error);
 
   moveit_msgs::CollisionObject object;
@@ -195,6 +195,7 @@ int main(int argc, char** argv)
   // Add table and object to planning scene
   moveit::planning_interface::PlanningSceneInterface psi;
   ros::NodeHandle pnh("~");
+  std::vector<std::string> collision_objects;
   if (pnh.param("spawn_table", true))
   {
     spawnObject(psi, createTable());
@@ -205,19 +206,25 @@ int main(int argc, char** argv)
   {
     spawnObject(psi, createCamera());
   }
+  // Add object to planning scene either as mesh or geometric primitive
+  if (pnh.param("spawn_ladle1", true))
+  {
+    spawnObject(psi, createCylinderObject("ladle1"));
+    // collision_objects.push_back("ladle1");
+  }
 
   // Add object to planning scene either as mesh or geometric primitive
-  if (pnh.param("spawn_mesh", true))
+  if (pnh.param("spawn_mustard", true))
   {
-    spawnObject(psi, createObjectMesh());
-  }
-  else if (pnh.param("spawn_object", true))
-  {
-    spawnObject(psi, createObject());
+    spawnObject(psi, createCylinderObject("mustard"));
+    collision_objects.push_back("mustard");
   }
 
+  // Wait for ApplyPlanningScene service
+  ros::Duration(2.0).sleep();
+
   // Construct and run task
-  deep_grasp_task::SaladTask deep_pick_place_task("deep_pick_place_task", nh);
+  deep_grasp_task::SaladTask deep_pick_place_task("deep_pick_place_task", nh, collision_objects);
   deep_pick_place_task.loadParameters();
   deep_pick_place_task.init();
 

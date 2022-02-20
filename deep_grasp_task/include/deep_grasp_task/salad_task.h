@@ -74,10 +74,39 @@ using namespace moveit::task_constructor;
 class SaladTask
 {
 public:
-  SaladTask(const std::string& task_name, const ros::NodeHandle& nh);
+  struct CollisionObjectParams
+  {
+    std::string name;
+    std::vector<double> dimensions;
+    geometry_msgs::Pose grasp_pose;
+    geometry_msgs::Pose place_pose;
+  };
+
+  SaladTask(const std::string& task_name, const ros::NodeHandle& nh, const std::vector<std::string> collision_objects);
   ~SaladTask() = default;
 
+  size_t loadObjectParams(ros::NodeHandle& pnh, const std::string name);
   void loadParameters();
+
+  std::unique_ptr<SerialContainer>
+  createCurrentState(const std::string object, const moveit::task_constructor::TaskPtr tptr, Stage*& current_state_ptr,
+                     const moveit::task_constructor::solvers::PipelinePlannerPtr sampling_planner);
+  std::unique_ptr<SerialContainer>
+  createPick(const std::string object, const moveit::task_constructor::TaskPtr tptr,
+             const moveit::task_constructor::solvers::PipelinePlannerPtr sampling_planner,
+             const moveit::task_constructor::solvers::CartesianPathPtr cartesian_planner,
+             Stage* const current_state_ptr, Stage*& attach_obj_ptr);
+
+  std::unique_ptr<SerialContainer>
+  createPlace(const std::string object, const moveit::task_constructor::TaskPtr tptr,
+              const moveit::task_constructor::solvers::PipelinePlannerPtr sampling_planner,
+              const moveit::task_constructor::solvers::CartesianPathPtr cartesian_planner,
+              Stage* const current_state_ptr, Stage* const attach_obj_ptr);
+  std::unique_ptr<SerialContainer>
+  createPour(const std::string object, const moveit::task_constructor::TaskPtr tptr,
+             const moveit::task_constructor::solvers::PipelinePlannerPtr sampling_planner,
+             const moveit::task_constructor::solvers::CartesianPathPtr cartesian_planner,
+             Stage* const current_state_ptr, Stage*& attach_obj_ptr);
 
   void init();
 
@@ -101,9 +130,8 @@ private:
   std::vector<std::string> support_surfaces_;
   std::string object_reference_frame_;
   std::string surface_link_;
-  std::string object_name_;
+  std::map<std::string, CollisionObjectParams> collision_objects_;
   std::string world_frame_;
-  std::vector<double> object_dimensions_;
 
   // Predefined pose targets
   std::string hand_open_pose_;
@@ -124,8 +152,7 @@ private:
   double lift_object_max_dist_;
 
   // Place metrics
-  geometry_msgs::Pose grasp_pose_;
-  geometry_msgs::Pose place_pose_;
+
   geometry_msgs::Pose pour_pose_;
   geometry_msgs::Pose pre_pour_pose_;
   double place_surface_offset_;
