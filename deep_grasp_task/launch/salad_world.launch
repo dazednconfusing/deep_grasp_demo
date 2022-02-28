@@ -1,15 +1,18 @@
 <?xml version="1.0"?>
 <launch>
-     <arg name="z1" value="0.045"/>
+     <arg name="z1" value="0.05"/>
      <arg name="z2" value="0.05"/>
-     <arg name="bowl1_args" default="-x 0.55 -y -0.25 -z $(arg z1)"/>
-     <arg name="bowl2_args" default="-x 0.55 -y 0 -z $(arg z2)"/>
+     <arg name="y1" value="-0.15"/>
+     <arg name="y2" value="0.15"/>
+     <arg name="y_mustard" value="0.33"/>
+     <arg name="bowl1_args" default="-x 0.58 -y $(arg y1) -z $(arg z1)"/>
+     <arg name="bowl2_args" default="-x 0.55 -y $(arg y2) -z $(arg z2)"/>
      <!-- <arg name="mustard_args" default="-x 0.55 -y 0.25 -z 0.09"/> -->
-     <arg name="mustard_args" default="-x 0.55 -y 0.25 -z 0.055"/>
+     <arg name="mustard_args" default="-x 0.55 -y $(arg y_mustard) -z 0.055"/>
      <arg name="table_args" default="x:=0.55 y:=0 z:=0.025 l:=0.65 w:=0.7 h:=0.05"/>
      <arg name="bowl3_args" default="-x 0.35 -y 0 -z 0.05"/>
-     <arg name="spoon1_args" default="-x 0.6 -y -0.25 -z 0.17"/>
-     <arg name="spoon2_args" default="-x 0.6 -y 0 -z 0.13"/>
+     <arg name="spoon1_args" default="-x 0.51 -y $(arg y1) -z 0.13  -P -0.38 -Y 3.1415"/>
+     <arg name="spoon2_args" default="-x 0.48 -y $(arg y2) -z 0.11  -P -0.45 -Y 3.1415"/>
 
      <arg name="use_gazebo" default="true" />
      <arg name="use_camera" default="true" />
@@ -51,7 +54,7 @@
      <!-- Run rviz with prepared config -->
      <include file="$(find interbotix_xslocobot_moveit)/launch/moveit_rviz.launch">
           <!-- <include ns="locobot" file="$(find interbotix_xslocobot_moveit)/launch/moveit_rviz.launch"> -->
-          <arg name="rviz_config" value="$(find moveit_task_constructor_demo)/config/mtc_peralta_feb.rviz" />
+          <arg name="rviz_config" value="$(find moveit_task_constructor_demo)/config/mtc_salad.rviz" />
      </include>
 </launch>
 

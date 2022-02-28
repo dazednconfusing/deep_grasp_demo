@@ -58,14 +58,15 @@ SaladTask::SaladTask(const std::string& task_name, const ros::NodeHandle& nh,
   }
 }
 
-size_t SaladTask::loadObjectParams(ros::NodeHandle& pnh, const std::string name)
+size_t loadObjectParams(ros::NodeHandle& pnh, const std::string name,
+                        std::map<std::string, SaladTask::CollisionObjectParams>& cobjects)
 {
   size_t errors = 0;
   // Target object
-  errors += !rosparam_shortcuts::get(LOGNAME, pnh, name + "_name", collision_objects_[name].name);
-  errors += !rosparam_shortcuts::get(LOGNAME, pnh, name + "_dimensions", collision_objects_[name].dimensions);
-  errors += !rosparam_shortcuts::get(LOGNAME, pnh, name + "_grasp_pose", collision_objects_[name].grasp_pose);
-  errors += !rosparam_shortcuts::get(LOGNAME, pnh, name + "_place_pose", collision_objects_[name].place_pose);
+  errors += !rosparam_shortcuts::get(LOGNAME, pnh, name + "_name", cobjects[name].name);
+  errors += !rosparam_shortcuts::get(LOGNAME, pnh, name + "_dimensions", cobjects[name].dimensions);
+  errors += !rosparam_shortcuts::get(LOGNAME, pnh, name + "_grasp_pose", cobjects[name].grasp_pose);
+  errors += !rosparam_shortcuts::get(LOGNAME, pnh, name + "_place_pose", cobjects[name].place_pose);
   return errors;
 }
 void SaladTask::loadParameters()
@@ -95,8 +96,11 @@ void SaladTask::loadParameters()
   errors += !rosparam_shortcuts::get(LOGNAME, pnh, "object_reference_frame", object_reference_frame_);
   support_surfaces_ = { surface_link_ };
 
-  errors += loadObjectParams(pnh, "ladle1");
-  errors += loadObjectParams(pnh, "mustard");
+  // Load object params
+  for (auto cobj : collision_objects_)
+  {
+    errors += loadObjectParams(pnh, cobj.first, collision_objects_);
+  }
 
   // Deep grasp properties
   errors += !rosparam_shortcuts::get(LOGNAME, pnh, "action_name", action_name_);
@@ -112,30 +116,46 @@ void SaladTask::loadParameters()
   rosparam_shortcuts::shutdownIfError(LOGNAME, errors);
 }
 
+std::unique_ptr<stages::ModifyPlanningScene>
+createSetCollisions(const moveit::task_constructor::TaskPtr tptr, const std::string link,
+                    const std::map<std::string, SaladTask::CollisionObjectParams>& cobjects, bool allow)
+
+{
+  auto all_cobjects = std::vector<std::string>();
+  for (auto cobj : cobjects)
+  {
+    all_cobjects.push_back(cobj.first);
+  }
+  auto stage = std::make_unique<stages::ModifyPlanningScene>("set collisions (" + link + ")=" + std::to_string(allow));
+  stage->allowCollisions(
+      all_cobjects, tptr->getRobotModel()->getJointModelGroup(link)->getLinkModelNamesWithCollisionGeometry(), allow);
+
+  return stage;
+}
+
 std::unique_ptr<SerialContainer>
-SaladTask::createCurrentState(const std::string object, const moveit::task_constructor::TaskPtr tptr,
-                              Stage*& current_state_ptr,
+SaladTask::createCurrentState(const moveit::task_constructor::TaskPtr tptr, Stage*& current_state_ptr,
                               const moveit::task_constructor::solvers::PipelinePlannerPtr sampling_planner)
 {
   auto c = std::make_unique<SerialContainer>("Current State");
   tptr->properties().exposeTo(c->properties(), { "eef", "hand", "group", "ik_frame" });
   c->properties().configureInitFrom(Stage::PARENT);
   auto current_state = std::make_unique<stages::CurrentState>("current state");
+  // current_state_ptr = current_state.get();
   c->insert(std::move(current_state));
 
-  // allow hand obj collisions
-  auto allow_hand_collisions = std::make_unique<stages::ModifyPlanningScene>("allow collision 1 (hand,object)");
-  allow_hand_collisions->allowCollisions(
-      "mustard", tptr->getRobotModel()->getJointModelGroup(hand_group_name_)->getLinkModelNamesWithCollisionGeometry(),
-      true);
+  // auto allow_collisions = createSetCollisions(tptr, hand_group_name_, collision_objects_, true);
+  // c->insert(std::move(allow_collisions));
 
-  c->insert(std::move(allow_hand_collisions));
+  auto open_hand = std::make_unique<stages::MoveTo>("open hand", sampling_planner);
+  open_hand->properties().property("group").configureInitFrom(Stage::PARENT, "hand");
+  open_hand->setGoal(hand_open_pose_);
+  current_state_ptr = open_hand.get();
+  c->insert(std::move(open_hand));
 
-  auto stage = std::make_unique<stages::MoveTo>("open hand", sampling_planner);
-  stage->properties().property("group").configureInitFrom(Stage::PARENT, "hand");
-  stage->setGoal(hand_open_pose_);
-  current_state_ptr = stage.get();
-  c->insert(std::move(stage));
+  // forbid hand obj collisions
+  // auto forbid_collisions = createSetCollisions(tptr, hand_group_name_, collision_objects_, false);
+  // c->insert(std::move(forbid_collisions));
 
   return c;
 }
@@ -150,18 +170,15 @@ SaladTask::createPick(const std::string object, const moveit::task_constructor::
   auto c = std::make_unique<SerialContainer>("Pick Path");
   tptr->properties().exposeTo(c->properties(), { "eef", "hand", "group", "ik_frame" });
   c->properties().configureInitFrom(Stage::PARENT);
-
-  {  // Forbid Collisions
-    auto stage = std::make_unique<stages::ModifyPlanningScene>("forbid collision (hand,object)");
-    stage->allowCollisions(
-        object, t.getRobotModel()->getJointModelGroup(hand_group_name_)->getLinkModelNamesWithCollisionGeometry(),
-        false);
-    c->insert(std::move(stage));
-  }
+  // {  // Forbid Collisions
+  //   auto stage = createSetCollisions(tptr, hand_group_name_, collision_objects_, false);
+  //   c->insert(std::move(stage));
+  // }
 
   {  // Move-to pre-grasp
     auto stage = std::make_unique<stages::Connect>(
-        "move to pick", stages::Connect::GroupPlannerVector{ { arm_group_name_, sampling_planner } });
+        "move to pick", stages::Connect::GroupPlannerVector{ { arm_group_name_, sampling_planner },
+                                                             { hand_group_name_, sampling_planner } });
     stage->setTimeout(connectTimeout);
     stage->properties().configureInitFrom(Stage::PARENT);
     c->insert(std::move(stage));
@@ -171,6 +188,13 @@ SaladTask::createPick(const std::string object, const moveit::task_constructor::
     auto grasp = std::make_unique<SerialContainer>("pick object");
     c->properties().exposeTo(grasp->properties(), { "eef", "hand", "group", "ik_frame" });
     grasp->properties().configureInitFrom(Stage::PARENT, { "eef", "hand", "group", "ik_frame" });
+
+    {  // Open Hand
+      auto stage = std::make_unique<stages::MoveTo>("open hand", sampling_planner);
+      stage->properties().property("group").configureInitFrom(Stage::PARENT, "hand");
+      stage->setGoal(hand_open_pose_);
+      grasp->insert(std::move(stage));
+    }
 
     {  // Allow Collisions
 
@@ -206,7 +230,7 @@ SaladTask::createPick(const std::string object, const moveit::task_constructor::
       stage->setPose(p);
 
       visual_tools_->publishAxis(p.pose);
-      visual_tools_->trigger();
+        visual_tools_->trigger();
 
       // Compute IK
       auto wrapper = std::make_unique<stages::ComputeIK>("grasp pose IK", std::move(stage));
@@ -304,6 +328,11 @@ SaladTask::createPlace(const std::string object, const moveit::task_constructor:
       stage->setDirection(vec);
       place->insert(std::move(stage));
     }
+    // {  // Allow Support-Object Collision
+    //   auto stage = std::make_unique<stages::ModifyPlanningScene>("allow collision (object,support)");
+    //   stage->allowCollisions({ object }, support_surfaces_, true);
+    //   place->insert(std::move(stage));
+    // }
     {
       // Generate Place Pose
       auto stage = std::make_unique<stages::GeneratePlacePose>("generate place pose");
@@ -317,6 +346,8 @@ SaladTask::createPlace(const std::string object, const moveit::task_constructor:
       p.header.frame_id = object_reference_frame_;
       p.pose = collision_objects_[object].place_pose;
       p.pose.position.z += place_surface_offset_;
+      // visual_tools_->publishAxis(p.pose);
+      // visual_tools_->trigger();
       stage->setPose(p);
       stage->setMonitoredStage(attach_obj_ptr);  // Hook into attach_object_stage
 
@@ -332,7 +363,6 @@ SaladTask::createPlace(const std::string object, const moveit::task_constructor:
     {  // Open Hand
       auto stage = std::make_unique<stages::MoveTo>("open hand", sampling_planner);
       stage->properties().property("group").configureInitFrom(Stage::PARENT, "hand");
-      // stage->setGroup(hand_group_name_);
       stage->setGoal(hand_open_pose_);
       place->insert(std::move(stage));
     }
@@ -374,7 +404,6 @@ SaladTask::createPour(const std::string object, const moveit::task_constructor::
                       const moveit::task_constructor::solvers::CartesianPathPtr cartesian_planner,
                       Stage* const current_state_ptr, Stage*& attach_obj_ptr)
 {
-  moveit::task_constructor::Task& t = *tptr;
   auto c = std::make_unique<SerialContainer>("Pour Path");
   tptr->properties().exposeTo(c->properties(), { "eef", "hand", "group", "ik_frame" });
   c->properties().configureInitFrom(Stage::PARENT);
@@ -384,7 +413,7 @@ SaladTask::createPour(const std::string object, const moveit::task_constructor::
     geometry_msgs::PoseStamped pose_msg;
     stage->properties().configureInitFrom(Stage::PARENT, { "ik_frame" });
     stage->properties().set("marker_ns", "pre_pour_pose");
-    stage->setObject("mustard");
+    stage->setObject(object);
     geometry_msgs::PoseStamped p;
     p.header.frame_id = object_reference_frame_;
     p.pose = pre_pour_pose_;
@@ -422,7 +451,7 @@ SaladTask::createPour(const std::string object, const moveit::task_constructor::
     geometry_msgs::PoseStamped pose_msg;
     stage->properties().configureInitFrom(Stage::PARENT, { "ik_frame" });
     stage->properties().set("marker_ns", "pour_pose");
-    stage->setObject("mustard");
+    stage->setObject(object);
     // Set target pose
     geometry_msgs::PoseStamped p;
     p.header.frame_id = object_reference_frame_;
@@ -437,6 +466,62 @@ SaladTask::createPour(const std::string object, const moveit::task_constructor::
     wrapper->properties().configureInitFrom(Stage::PARENT, { "eef", "group" });
     wrapper->properties().configureInitFrom(Stage::INTERFACE, { "target_pose" });
     c->insert(std::move(wrapper));
+  }
+  return c;
+}
+
+std::unique_ptr<SerialContainer> SaladTask::createPickScoopPlace(
+    const std::string object, const std::string next_object, const moveit::task_constructor::TaskPtr tptr,
+    const moveit::task_constructor::solvers::PipelinePlannerPtr sampling_planner,
+    const moveit::task_constructor::solvers::CartesianPathPtr cartesian_planner, Stage*& current_state_ptr)
+{
+  auto c = std::make_unique<SerialContainer>("PickScoopPlace Path");
+  tptr->properties().exposeTo(c->properties(), { "eef", "hand", "group", "ik_frame" });
+  {
+    Stage* attach_obj_ptr = nullptr;
+    {  // Pick
+      auto stage = createPick(object, task_, sampling_planner, cartesian_planner, current_state_ptr, attach_obj_ptr);
+      c->insert(std::move(stage));
+    }
+    {  // Connect to place
+      auto stage = std::make_unique<stages::Connect>(
+          "connect pick place", stages::Connect::GroupPlannerVector{ { arm_group_name_, sampling_planner } });
+      stage->setTimeout(connectTimeout);
+      stage->properties().configureInitFrom(Stage::PARENT);
+      c->insert(std::move(stage));
+    }
+    {  // Place
+      auto place =
+          SaladTask::createPlace(object, task_, sampling_planner, cartesian_planner, current_state_ptr, attach_obj_ptr);
+      c->insert(std::move(place));
+    }
+
+    // {  // Move to home
+    //   auto stage = std::make_unique<stages::MoveTo>("move home", sampling_planner);
+    //   stage->properties().configureInitFrom(Stage::PARENT, { "group" });
+    //   stage->setGoal(arm_home_pose_);
+    //   stage->restrictDirection(stages::MoveTo::FORWARD);
+    //   c->insert(std::move(stage));
+    // }
+    {
+      // allow hand obj collisions
+      if (collision_objects_.find(next_object) != collision_objects_.end())
+      {
+        auto stage =
+            createSetCollisions(task_, hand_group_name_, { { next_object, collision_objects_[next_object] } }, true);
+        current_state_ptr = stage.get();
+        c->insert(std::move(stage));
+      }
+    }
+    // {  // Open Hand
+    //   auto stage = std::make_unique<stages::MoveTo>("open hand", sampling_planner);
+    //   stage->properties().property("group").configureInitFrom(Stage::PARENT, "hand");
+    //   stage->setGoal(hand_open_pose_);
+
+    //   // Hook into this state
+    //   current_state_ptr = stage.get();
+    //   c->insert(std::move(stage));
+    // }
   }
   return c;
 }
@@ -472,48 +557,65 @@ void SaladTask::init()
   t.setProperty("hand_grasping_frame", hand_frame_);
   t.setProperty("ik_frame", hand_frame_);
 
-  Stage* current_state_ptr = nullptr;
+  Stage* init_state_ptr = nullptr;
   {  // Current State
-    auto stage = SaladTask::createCurrentState("mustard", task_, current_state_ptr, sampling_planner);
+    auto stage = SaladTask::createCurrentState(task_, init_state_ptr, sampling_planner);
+    t.add(std::move(stage));
+  }
+  if (collision_objects_.find("ladle1") != collision_objects_.end())
+  {
+    auto stage =
+        SaladTask::createPickScoopPlace("ladle1", "ladle2", task_, sampling_planner, cartesian_planner, init_state_ptr);
     t.add(std::move(stage));
   }
 
-  Stage* attach_obj_ptr = nullptr;
-
-  {  // Pick
-    auto stage = createPick("mustard", task_, sampling_planner, cartesian_planner, current_state_ptr, attach_obj_ptr);
-    t.add(std::move(stage));
-  }
-  {  // Move to Pour
-    auto stage = std::make_unique<stages::Connect>(
-        "move to pour", stages::Connect::GroupPlannerVector{ { arm_group_name_, sampling_planner } });
-    stage->setTimeout(connectTimeout);
-    stage->properties().configureInitFrom(Stage::PARENT);
+  if (collision_objects_.find("ladle2") != collision_objects_.end())
+  {
+    auto stage = SaladTask::createPickScoopPlace("ladle2", "mustard", task_, sampling_planner, cartesian_planner,
+                                                 init_state_ptr);
     t.add(std::move(stage));
   }
 
-  {  // Pour
-    auto stage = createPour("mustard", task_, sampling_planner, cartesian_planner, current_state_ptr, attach_obj_ptr);
-    t.add(std::move(stage));
-  }
-  {  // Move to place
-    auto stage = std::make_unique<stages::Connect>(
-        "move to place", stages::Connect::GroupPlannerVector{ { arm_group_name_, sampling_planner } });
-    stage->setTimeout(5.0);
-    stage->properties().configureInitFrom(Stage::PARENT);
-    t.add(std::move(stage));
-  }
-  {  // Place
-    auto place = SaladTask::createPlace("mustard", task_, sampling_planner, cartesian_planner, current_state_ptr,
-                                        attach_obj_ptr);
-    t.add(std::move(place));
-  }
-  {  // Move to home
-    auto stage = std::make_unique<stages::MoveTo>("move home", sampling_planner);
-    stage->properties().configureInitFrom(Stage::PARENT, { "group" });
-    stage->setGoal(arm_home_pose_);
-    stage->restrictDirection(stages::MoveTo::FORWARD);
-    t.add(std::move(stage));
+  if (collision_objects_.find("mustard") != collision_objects_.end())
+  {
+    Stage* attach_mustard_ptr = nullptr;
+    {  // Pick
+      auto stage =
+          createPick("mustard", task_, sampling_planner, cartesian_planner, init_state_ptr, attach_mustard_ptr);
+      t.add(std::move(stage));
+    }
+    {  // Move to Pour
+      auto stage = std::make_unique<stages::Connect>(
+          "move to pour", stages::Connect::GroupPlannerVector{ { arm_group_name_, sampling_planner } });
+      stage->setTimeout(connectTimeout);
+      stage->properties().configureInitFrom(Stage::PARENT);
+      t.add(std::move(stage));
+    }
+
+    {  // Pour
+      auto stage =
+          createPour("mustard", task_, sampling_planner, cartesian_planner, init_state_ptr, attach_mustard_ptr);
+      t.add(std::move(stage));
+    }
+    {  // Move to place
+      auto stage = std::make_unique<stages::Connect>(
+          "move to place", stages::Connect::GroupPlannerVector{ { arm_group_name_, sampling_planner } });
+      stage->setTimeout(5.0);
+      stage->properties().configureInitFrom(Stage::PARENT);
+      t.add(std::move(stage));
+    }
+    {  // Place
+      auto place = SaladTask::createPlace("mustard", task_, sampling_planner, cartesian_planner, init_state_ptr,
+                                          attach_mustard_ptr);
+      t.add(std::move(place));
+    }
+    {  // Move to home
+      auto stage = std::make_unique<stages::MoveTo>("move home", sampling_planner);
+      stage->properties().configureInitFrom(Stage::PARENT, { "group" });
+      stage->setGoal(arm_home_pose_);
+      stage->restrictDirection(stages::MoveTo::FORWARD);
+      t.add(std::move(stage));
+    }
   }
 }
 

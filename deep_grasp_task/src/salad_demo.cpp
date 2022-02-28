@@ -207,10 +207,16 @@ int main(int argc, char** argv)
     spawnObject(psi, createCamera());
   }
   // Add object to planning scene either as mesh or geometric primitive
+
   if (pnh.param("spawn_ladle1", true))
   {
     spawnObject(psi, createCylinderObject("ladle1"));
-    // collision_objects.push_back("ladle1");
+    collision_objects.push_back("ladle1");
+  }
+  if (pnh.param("spawn_ladle2", true))
+  {
+    spawnObject(psi, createCylinderObject("ladle2"));
+    collision_objects.push_back("ladle2");
   }
 
   // Add object to planning scene either as mesh or geometric primitive

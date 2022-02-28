@@ -1,8 +1,9 @@
+# C++ 20
+add_compile_options(-std=c++14)
 cmake_minimum_required(VERSION 3.0.2)
 project(deep_grasp_task)
 
-# C++ 14
-add_compile_options(-std=c++14)
+
 
 # Warnings
 add_definitions(-W -Wall -Wextra

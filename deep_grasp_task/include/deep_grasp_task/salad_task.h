@@ -85,11 +85,10 @@ public:
   SaladTask(const std::string& task_name, const ros::NodeHandle& nh, const std::vector<std::string> collision_objects);
   ~SaladTask() = default;
 
-  size_t loadObjectParams(ros::NodeHandle& pnh, const std::string name);
   void loadParameters();
 
   std::unique_ptr<SerialContainer>
-  createCurrentState(const std::string object, const moveit::task_constructor::TaskPtr tptr, Stage*& current_state_ptr,
+  createCurrentState(const moveit::task_constructor::TaskPtr tptr, Stage*& current_state_ptr,
                      const moveit::task_constructor::solvers::PipelinePlannerPtr sampling_planner);
   std::unique_ptr<SerialContainer>
   createPick(const std::string object, const moveit::task_constructor::TaskPtr tptr,
@@ -107,6 +106,11 @@ public:
              const moveit::task_constructor::solvers::PipelinePlannerPtr sampling_planner,
              const moveit::task_constructor::solvers::CartesianPathPtr cartesian_planner,
              Stage* const current_state_ptr, Stage*& attach_obj_ptr);
+  std::unique_ptr<SerialContainer>
+  createPickScoopPlace(const std::string object, const std::string next_object,const moveit::task_constructor::TaskPtr tptr,
+                       const moveit::task_constructor::solvers::PipelinePlannerPtr sampling_planner,
+                       const moveit::task_constructor::solvers::CartesianPathPtr cartesian_planner,
+                       Stage*& current_state_ptr);
 
   void init();
 
