@@ -3,8 +3,8 @@
      <arg name="z1" value="0.05"/>
      <arg name="z2" value="0.05"/>
      <arg name="y1" value="-0.15"/>
-     <arg name="y2" value="0.15"/>
-     <arg name="y_mustard" value="0.33"/>
+     <arg name="y2" value="0.12"/>
+     <arg name="y_mustard" value="0.31"/>
      <arg name="bowl1_args" default="-x 0.58 -y $(arg y1) -z $(arg z1)"/>
      <arg name="bowl2_args" default="-x 0.55 -y $(arg y2) -z $(arg z2)"/>
      <!-- <arg name="mustard_args" default="-x 0.55 -y 0.25 -z 0.09"/> -->

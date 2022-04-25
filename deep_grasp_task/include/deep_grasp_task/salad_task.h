@@ -80,6 +80,8 @@ public:
     std::vector<double> dimensions;
     geometry_msgs::Pose grasp_pose;
     geometry_msgs::Pose place_pose;
+    geometry_msgs::Pose pre_pour_pose;
+    geometry_msgs::Pose pour_pose;
   };
 
   SaladTask(const std::string& task_name, const ros::NodeHandle& nh, const std::vector<std::string> collision_objects);
@@ -88,8 +90,7 @@ public:
   void loadParameters();
 
   std::unique_ptr<SerialContainer>
-  createCurrentState(const moveit::task_constructor::TaskPtr tptr, Stage*& current_state_ptr,
-                     const moveit::task_constructor::solvers::PipelinePlannerPtr sampling_planner);
+  createCurrentState(const moveit::task_constructor::solvers::PipelinePlannerPtr sampling_planner);
   std::unique_ptr<SerialContainer>
   createPick(const std::string object, const moveit::task_constructor::TaskPtr tptr,
              const moveit::task_constructor::solvers::PipelinePlannerPtr sampling_planner,
@@ -100,17 +101,22 @@ public:
   createPlace(const std::string object, const moveit::task_constructor::TaskPtr tptr,
               const moveit::task_constructor::solvers::PipelinePlannerPtr sampling_planner,
               const moveit::task_constructor::solvers::CartesianPathPtr cartesian_planner,
-              Stage* const current_state_ptr, Stage* const attach_obj_ptr);
+              Stage* const current_state_ptr, Stage* const attach_obj_ptr,
+              const geometry_msgs::Vector3Stamped* const retreat_dir = nullptr, const float retreat_dist = 0);
   std::unique_ptr<SerialContainer>
-  createPour(const std::string object, const moveit::task_constructor::TaskPtr tptr,
+  createPour(const std::string object, Stage*& attach_obj_ptr,
              const moveit::task_constructor::solvers::PipelinePlannerPtr sampling_planner,
-             const moveit::task_constructor::solvers::CartesianPathPtr cartesian_planner,
-             Stage* const current_state_ptr, Stage*& attach_obj_ptr);
+             const moveit::task_constructor::solvers::CartesianPathPtr cartesian_planner);
+  std::unique_ptr<SerialContainer> createPickScoopPlace(
+      const std::string object, const std::string next_object, const moveit::task_constructor::TaskPtr tptr,
+      const moveit::task_constructor::solvers::PipelinePlannerPtr sampling_planner,
+      const moveit::task_constructor::solvers::CartesianPathPtr cartesian_planner, Stage*& current_state_ptr);
+
   std::unique_ptr<SerialContainer>
-  createPickScoopPlace(const std::string object, const std::string next_object,const moveit::task_constructor::TaskPtr tptr,
-                       const moveit::task_constructor::solvers::PipelinePlannerPtr sampling_planner,
-                       const moveit::task_constructor::solvers::CartesianPathPtr cartesian_planner,
-                       Stage*& current_state_ptr);
+  createPickPourPlace(const std::string object,
+                      const moveit::task_constructor::solvers::PipelinePlannerPtr sampling_planner,
+                      const moveit::task_constructor::solvers::CartesianPathPtr cartesian_planner,
+                      const geometry_msgs::Vector3Stamped* const reatreat_dir = nullptr, const float retreat_dist = 0);
 
   void init();
 
@@ -123,6 +129,7 @@ private:
 
   std::string task_name_;
   moveit::task_constructor::TaskPtr task_;
+  Stage* monitored_state_;
 
   // planning group properties
   std::string arm_group_name_;
