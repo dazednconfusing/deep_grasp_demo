@@ -79,7 +79,7 @@ moveit_msgs::CollisionObject createTable()
   object.primitives.resize(1);
   object.primitives[0].type = shape_msgs::SolidPrimitive::BOX;
   object.primitives[0].dimensions = table_dimensions;
-  pose.position.z -= 0.5 * table_dimensions[2];  // align surface with world
+  pose.position.z += 0.5 * table_dimensions[2];  // align surface with world
   object.primitive_poses.push_back(pose);
   object.operation = moveit_msgs::CollisionObject::ADD;
 
@@ -195,13 +195,13 @@ int main(int argc, char** argv)
   // Add table and object to planning scene
   moveit::planning_interface::PlanningSceneInterface psi;
   ros::NodeHandle pnh("~");
-  if (pnh.param("spawn_table", true))
+  if (pnh.param("spawn_table", false))
   {
     spawnObject(psi, createTable());
   }
 
   // Add camera to planning scene
-  if (pnh.param("spawn_camera", true))
+  if (pnh.param("spawn_camera", false))
   {
     spawnObject(psi, createCamera());
   }
@@ -211,7 +211,7 @@ int main(int argc, char** argv)
   {
     spawnObject(psi, createObjectMesh());
   }
-  else
+  else if (pnh.param("spawn_object", false))
   {
     spawnObject(psi, createObject());
   }

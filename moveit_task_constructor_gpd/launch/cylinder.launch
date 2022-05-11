@@ -25,7 +25,7 @@
   <param name="execute" value="true" />
   <param name="action_name" value="$(arg action_name)"/>
 
-<rosparam command="load" file="$(find deep_grasp_task)/config/gpd_config.yaml" />
+<rosparam command="load" file="$(find deep_grasp_task)/config/cylinder_config.yaml" />
 
   </node>
 

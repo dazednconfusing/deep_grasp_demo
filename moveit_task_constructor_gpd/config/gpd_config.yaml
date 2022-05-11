@@ -23,14 +23,14 @@ init_bite = 0.01
 #   volume_height: the height of the cube inside the robot hand
 #   image_size: the size of the image (width and height; image is square)
 #   image_num_channels: the number of image channels
-volume_width = 0.04
+volume_width = 0.043
 volume_depth = 0.035
 volume_height = 0.025
 image_size = 60
 image_num_channels = 15
 
 # Path to directory that contains neural network parameters
-weights_file = /home/sebastian/simply_ws/src/gpd/models/lenet/15channels/params/
+weights_file = /home/sebastian/simply_ws/src/simply_mono/gpd/models/lenet/15channels/params/
 
 # Preprocessing of point cloud
 #   voxelize: if the cloud gets voxelized/downsampled
@@ -42,14 +42,22 @@ voxelize = 1
 voxel_size = 0.003
 remove_outliers = 0
 # workspace = -0.25 -0.16 -0.06 0.06 0.45 0.75
-workspace = -0.4 -0.1 -0.15 0.15 0.25 0.75
-# workspace = -1.0 1.0 -1.0 1.0 -1.0 1.0
+
+
+
+# workspace = -0.4 -0.1 -0.15 0.15 0.25 0.75
+
+
+# workspace = 0.3 0.7 -0.2 0.2 0.05 0.45
+workspace = -0.2 0.2 -1.0 0.4 0.55 0.85
 # workspace = -2.0 2.0 -2.0 2.0 -2.0 2.0
 # camera_position = 0.5 0 0.7
 # camera_position = 0.15 0 0.04
-camera_position = 0.084 0.017 0.522
+# camera_position = 0.084 0.017 0.522
+camera_position = 0 0 0.57
 sample_above_plane = 0
-
+tf_base_cam = 0.084 0.017 0.522 0 0.8 0
+tf_cam_opt = 0 0 0 -1.57 0 -1.57
 # Grasp candidate generation
 #   num_samples: the number of samples to be drawn from the point cloud
 #   num_threads: the number of CPU threads to be used
@@ -60,9 +68,9 @@ num_samples = 100
 num_threads = 4
 nn_radius = 0.01
 num_orientations = 16
-num_finger_placements = 20
+num_finger_placements = 8
 hand_axes = 2
-deepen_hand = 1
+deepen_hand = 0
 # num_samples = 2000
 # num_threads = 4
 # nn_radius = 0.01
@@ -76,10 +84,17 @@ deepen_hand = 1
 #   max_aperture: the maximum gripper width
 #   workspace_grasps: dimensions of a cube centered at origin of point cloud; should be smaller than <workspace>
 min_aperture = 0.0
-max_aperture = 0.04
-# workspace_graps = -1.0 1.0 -1.0 1.0 -1.0 1.0
+max_aperture = 0.043
+# workspace_grasps = -1.0 1.0 -1.0 1.0 -1.0 1.0
 # workspace_grasps = -0.25 -0.16 -0.06 0.06 0.3 0.75
-workspace_grasps = -0.3 -0.1 -0.15 0.15 0.25 0.7
+# workspace_grasps = 0.4 0.6 -0.2 0.1 0 0.4
+workspace_grasps = 0.3 0.7 -0.3 0.3 0 0.5
+
+
+# workspace_grasps = -0.3 -0.1 -0.15 0.15 0.25 0.7
+
+
+
 # workspace_grasps = -.75 .75 -.5 .5 -.5 .5
 # workspace_grasps = 0.1 0.2 -0.05 0.05 0 0.65
 # workspace_grasps = -0.3 -0.1 0 0.2 0 1
@@ -100,7 +115,7 @@ min_inliers = 1
 
 # Grasp selection
 #   num_selected: number of selected grasps (sorted by score)
-num_selected = 100
+num_selected = 30
 
 # Visualization
 #   plot_normals: plot the surface normals

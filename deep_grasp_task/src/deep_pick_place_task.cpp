@@ -104,6 +104,11 @@ void DeepPickPlaceTask::init()
   t.stages()->setName(task_name_);
   t.loadRobotModel();
 
+  ROS_INFO("HAND GROUP: ");
+  for (const std::string n : t.getRobotModel()->getJointModelGroup(hand_group_name_)->getLinkModelNamesWithCollisionGeometry()) {
+    ROS_INFO(n.c_str());
+  }
+
   // Sampling planner
   auto sampling_planner = std::make_shared<solvers::PipelinePlanner>();
   sampling_planner->setProperty("goal_joint_tolerance", 1e-5);
@@ -128,6 +133,28 @@ void DeepPickPlaceTask::init()
    ***************************************************/
   Stage* current_state_ptr = nullptr;  // Forward current_state on to grasp pose generator
   {
+    auto current = std::make_unique<SerialContainer>("current state wrapper");
+    t.properties().exposeTo(current->properties(), { "eef", "hand", "group", "ik_frame" });
+    current->properties().configureInitFrom(Stage::PARENT, { "eef", "hand", "group", "ik_frame" });
+
+    /****************************************************
+---- *               Allow Collision (hand object)   *
+  ***************************************************/
+    {
+      auto stage = std::make_unique<stages::ModifyPlanningScene>("allow collision (hand,object)");
+      stage->allowCollisions(
+        object, t.getRobotModel()->getJointModelGroup(hand_group_name_)->getLinkModelNamesWithCollisionGeometry(),
+        true);
+      current->insert(std::move(stage));
+    }
+    {
+      auto stage = std::make_unique<stages::ModifyPlanningScene>("allow collision (arm,object)");
+      stage->allowCollisions(
+        object, t.getRobotModel()->getJointModelGroup(arm_group_name_)->getLinkModelNamesWithCollisionGeometry(),
+        true);
+      current->insert(std::move(stage));
+    }
+
     auto current_state = std::make_unique<stages::CurrentState>("current state");
 
     // Verify that object is not attached
@@ -142,8 +169,49 @@ void DeepPickPlaceTask::init()
       return true;
     });
 
-    current_state_ptr = applicability_filter.get();
-    t.add(std::move(applicability_filter));
+    current->insert(std::move(applicability_filter));
+
+    /****************************************************
+---- *               Allow Collision (hand object)   *
+***************************************************/
+    {
+      auto stage = std::make_unique<stages::ModifyPlanningScene>("allow collision (hand,object)");
+      stage->allowCollisions(
+        object, t.getRobotModel()->getJointModelGroup(hand_group_name_)->getLinkModelNamesWithCollisionGeometry(),
+        true);
+
+      current->insert(std::move(stage));
+    }
+    {
+      auto stage = std::make_unique<stages::ModifyPlanningScene>("allow collision (hand,object)");
+      stage->allowCollisions(
+        object, t.getRobotModel()->getJointModelGroup(arm_group_name_)->getLinkModelNamesWithCollisionGeometry(),
+        true);
+      current_state_ptr = stage.get();
+      current->insert(std::move(stage));
+    }
+    current_state_ptr = current.get();
+    t.add(std::move(current));
+  }
+
+
+  /******************************************************
+---- *          Forbid collision (hand, object)        *
+*****************************************************/
+  {
+    auto stage = std::make_unique<stages::ModifyPlanningScene>("forbid collision (hand,object)");
+    stage->allowCollisions(
+      object_name_, t.getRobotModel()->getJointModelGroup(hand_group_name_)->getLinkModelNamesWithCollisionGeometry(),
+      false);
+    t.add(std::move(stage));
+  }
+  {
+    auto stage = std::make_unique<stages::ModifyPlanningScene>("forbid collision (hand,object)");
+    stage->allowCollisions(
+      object, t.getRobotModel()->getJointModelGroup(arm_group_name_)->getLinkModelNamesWithCollisionGeometry(),
+      false);
+    current_state_ptr = stage.get();
+    t.add(std::move(stage));
   }
 
   /****************************************************
@@ -211,16 +279,24 @@ void DeepPickPlaceTask::init()
     t.properties().exposeTo(grasp->properties(), { "eef", "hand", "group", "ik_frame" });
     grasp->properties().configureInitFrom(Stage::PARENT, { "eef", "hand", "group", "ik_frame" });
 
-    /****************************************************
----- *               Allow Collision (hand object)   *
-  ***************************************************/
-    {
-      auto stage = std::make_unique<stages::ModifyPlanningScene>("allow collision (hand,object)");
-      stage->allowCollisions(
-          object, t.getRobotModel()->getJointModelGroup(hand_group_name_)->getLinkModelNamesWithCollisionGeometry(),
-          true);
-      grasp->insert(std::move(stage));
-    }
+    //     /****************************************************
+    // ---- *               Allow Collision (hand object)   *
+    //   ***************************************************/
+    //     {
+    //       auto stage = std::make_unique<stages::ModifyPlanningScene>("allow collision (hand,object)");
+    //       stage->allowCollisions(
+    //           object, t.getRobotModel()->getJointModelGroup(hand_group_name_)->getLinkModelNamesWithCollisionGeometry(),
+    //           true);
+    //       grasp->insert(std::move(stage));
+    //     }
+    //     {
+    //       auto stage = std::make_unique<stages::ModifyPlanningScene>("allow collision (arm,object)");
+    //       stage->allowCollisions(
+    //         object, t.getRobotModel()->getJointModelGroup(arm_group_name_)->getLinkModelNamesWithCollisionGeometry(),
+    //         true);
+    //       grasp->insert(std::move(stage));
+    //     }
+
 
     /****************************************************
   ---- *               Approach Object                    *
@@ -260,6 +336,24 @@ void DeepPickPlaceTask::init()
       wrapper->properties().configureInitFrom(Stage::PARENT, { "eef", "group" });
       wrapper->properties().configureInitFrom(Stage::INTERFACE, { "target_pose" });
       grasp->insert(std::move(wrapper));
+    }
+
+    /****************************************************
+---- *               Allow Collision (hand object)   *
+  ***************************************************/
+    {
+      auto stage = std::make_unique<stages::ModifyPlanningScene>("allow collision (hand,object)");
+      stage->allowCollisions(
+        object, t.getRobotModel()->getJointModelGroup(hand_group_name_)->getLinkModelNamesWithCollisionGeometry(),
+        true);
+      grasp->insert(std::move(stage));
+    }
+    {
+      auto stage = std::make_unique<stages::ModifyPlanningScene>("allow collision (arm,object)");
+      stage->allowCollisions(
+        object, t.getRobotModel()->getJointModelGroup(arm_group_name_)->getLinkModelNamesWithCollisionGeometry(),
+        true);
+      grasp->insert(std::move(stage));
     }
 
     /****************************************************
@@ -416,16 +510,6 @@ void DeepPickPlaceTask::init()
       stage->setGoal(hand_open_pose_);
       place->insert(std::move(stage));
     }
-    /******************************************************
----- *          Forbid collision (hand, object)        *
- *****************************************************/
-    {
-      auto stage = std::make_unique<stages::ModifyPlanningScene>("forbid collision (hand,object)");
-      stage->allowCollisions(
-          object_name_,
-          t.getRobotModel()->getJointModelGroup(hand_group_name_)->getLinkModelNamesWithCollisionGeometry(), false);
-      place->insert(std::move(stage));
-    }
 
     /******************************************************
   ---- *          Detach Object                             *
@@ -454,6 +538,17 @@ void DeepPickPlaceTask::init()
 
     // Add place container to task
     t.add(std::move(place));
+  }
+
+  /******************************************************
+---- *          Forbid collision (hand, object)        *
+*****************************************************/
+  {
+    auto stage = std::make_unique<stages::ModifyPlanningScene>("forbid collision (hand,object)");
+    stage->allowCollisions(
+      object_name_, t.getRobotModel()->getJointModelGroup(hand_group_name_)->getLinkModelNamesWithCollisionGeometry(),
+      false);
+    t.add(std::move(stage));
   }
 
   /******************************************************
