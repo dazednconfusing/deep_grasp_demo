@@ -74,9 +74,13 @@ class DeepPickPlaceTask
 {
 public:
   DeepPickPlaceTask(const std::string& task_name, const ros::NodeHandle& nh);
+  DeepPickPlaceTask(const std::string& task_name, const ros::NodeHandle& nh,
+    const std::string& object);
   ~DeepPickPlaceTask() = default;
 
   void loadParameters();
+  void loadParameters(const std::string& object);
+  void loadParameters(const std::string& object, const std::string& allowed_collision);
 
   void init();
 
@@ -111,6 +115,7 @@ private:
 
   // Deep grasp properties
   std::string action_name_;
+  std::string allowed_collision_;
 
   // Execution
   actionlib::SimpleActionClient<moveit_task_constructor_msgs::ExecuteTaskSolutionAction> execute_;

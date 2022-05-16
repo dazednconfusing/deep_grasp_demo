@@ -1,0 +1,78 @@
+# Total planning attempts
+max_solutions: 10
+
+# Planning group and link names
+arm_group_name: "interbotix_arm"
+eef_name: "interbotix_hand"
+hand_group_name: "interbotix_hand"
+hand_frame: "locobot_fingers_link"
+
+# Poses
+hand_open_pose: "Open"
+hand_close_pose: "Closed"
+arm_home_pose: "Sleep"
+
+# Scene frames
+world_frame: "world"
+table_reference_frame: "world"
+object_reference_frame: "world"
+camera_reference_frame: "world"
+bowl_reference_frame: "world"
+surface_link: "table"
+
+# spawn_objs: ["block3", "block2", "block1"]
+
+spawn_objs: ["block3", "block2", "block1"]
+
+block1_name: "block1"
+block1_dimensions: [0.0254, 0.0254, 0.0254] # [height, radius]
+block1_pose: [0.5, 0, 0.1, 0, 0, 0]
+block1_place_pose: [0.4, 0.2,  0.1510, 0, 0, 0]
+
+block2_name: "block2"
+block2_dimensions: [0.0254, 0.0254, 0.0254] # [height, radius]
+block2_pose: [0.5, 0, 0.1254, 0, 0, 0]
+block2_place_pose: [0.4, 0.2, 0.1254, 0, 0, 0]
+
+block3_name: "block3"
+block3_dimensions: [0.0254, 0.0254, 0.0254] # [height, radius]
+block3_pose: [0.5, 0, 0.1508, 0, 0, 0]
+block3_place_pose: [0.4, 0.2,0.1, 0, 0, 0]
+
+# # BAR CLAMP
+# spawn_mesh: true
+# object_name: "object"
+# object_mesh_file: "package://deep_grasp_task/meshes/objects/bar_clamp.dae"
+# object_dimensions: [0.06, 0.12, 0.04]  # [length, width, height]
+# object_pose: [0.5, 0, 0.03, 0, 0, 0]
+
+# STRAWBERRY
+# spawn_mesh: true
+# object_name: "object"
+# object_mesh_file: "package://deep_grasp_task/meshes/objects/strawberry.dae"
+# object_dimensions: [0.02]  # [radius]
+# object_pose: [0.5, 0, 0., 0, 0, 0]
+
+
+
+# Table model
+spawn_table: true
+table_name: "table"
+table_dimensions: [0.4, 0.5, 0.1]  # [length, width, height]
+table_pose: [0.5, 0, 0, 0, 0, 0]
+
+# Gripper grasp frame transform [x,y,z,r,p,y]
+grasp_frame_transform: [0, 0, 0, 0, 0, 0]
+
+# Place pose [x,y,z,r,p,y]
+# place_pose: [0.5, 0.3, 0, 0, 0, 0]
+
+place_surface_offset: 0.0005 # place offset from table
+
+# Valid distance range when approaching an object for picking
+approach_object_min_dist: 0.03
+approach_object_max_dist: 0.15
+
+# Valid height range when lifting an object after pick
+lift_object_min_dist: 0.01
+lift_object_max_dist: 0.1

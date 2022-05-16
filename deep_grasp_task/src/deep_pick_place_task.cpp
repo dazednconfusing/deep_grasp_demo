@@ -41,12 +41,25 @@
 namespace deep_grasp_task
 {
 constexpr char LOGNAME[] = "pick_place_task";
-DeepPickPlaceTask::DeepPickPlaceTask(const std::string& task_name, const ros::NodeHandle& nh)
+DeepPickPlaceTask::DeepPickPlaceTask(const std::string& task_name,
+  const ros::NodeHandle& nh)
   : nh_(nh), task_name_(task_name), execute_("execute_task_solution", true)
 {
 }
-
+DeepPickPlaceTask::DeepPickPlaceTask(const std::string& task_name,
+  const ros::NodeHandle& nh, const std::string& object)
+  : nh_(nh), task_name_(task_name), execute_("execute_task_solution", true)
+{
+}
 void DeepPickPlaceTask::loadParameters()
+{
+  loadParameters("object", "");
+}
+void DeepPickPlaceTask::loadParameters(const std::string& object)
+{
+  loadParameters(object, "");
+}
+void DeepPickPlaceTask::loadParameters(const std::string& object, const std::string& allowed_collision)
 {
   /****************************************************
    *                                                  *
@@ -71,8 +84,8 @@ void DeepPickPlaceTask::loadParameters()
   errors += !rosparam_shortcuts::get(LOGNAME, pnh, "arm_home_pose", arm_home_pose_);
 
   // Target object
-  errors += !rosparam_shortcuts::get(LOGNAME, pnh, "object_name", object_name_);
-  errors += !rosparam_shortcuts::get(LOGNAME, pnh, "object_dimensions", object_dimensions_);
+  errors += !rosparam_shortcuts::get(LOGNAME, pnh, object + "_name", object_name_);
+  errors += !rosparam_shortcuts::get(LOGNAME, pnh, object + "_dimensions", object_dimensions_);
   errors += !rosparam_shortcuts::get(LOGNAME, pnh, "object_reference_frame", object_reference_frame_);
   errors += !rosparam_shortcuts::get(LOGNAME, pnh, "surface_link", surface_link_);
   support_surfaces_ = { surface_link_ };
@@ -86,7 +99,9 @@ void DeepPickPlaceTask::loadParameters()
   errors += !rosparam_shortcuts::get(LOGNAME, pnh, "lift_object_min_dist", lift_object_min_dist_);
   errors += !rosparam_shortcuts::get(LOGNAME, pnh, "lift_object_max_dist", lift_object_max_dist_);
   errors += !rosparam_shortcuts::get(LOGNAME, pnh, "place_surface_offset", place_surface_offset_);
-  errors += !rosparam_shortcuts::get(LOGNAME, pnh, "place_pose", place_pose_);
+  errors += !rosparam_shortcuts::get(LOGNAME, pnh, object + "_place_pose", place_pose_);
+
+  allowed_collision_ = std::string(allowed_collision);
   rosparam_shortcuts::shutdownIfError(LOGNAME, errors);
 }
 
@@ -94,11 +109,13 @@ void DeepPickPlaceTask::init()
 {
   ROS_INFO_NAMED(LOGNAME, "Initializing task pipeline");
   const std::string object = object_name_;
+  ROS_INFO_STREAM_NAMED("pick_place_task", "OBJECT NAME: " + object + ", ALLOWED COLLISION: " + allowed_collision_);
 
   // Reset ROS introspection before constructing the new object
   // TODO(henningkayser): verify this is a bug, fix if possible
   task_.reset();
   task_.reset(new moveit::task_constructor::Task());
+  task_->introspection().reset();
 
   Task& t = *task_;
   t.stages()->setName(task_name_);
@@ -225,35 +242,7 @@ void DeepPickPlaceTask::init()
     stage->setGoal(hand_open_pose_);
     t.add(std::move(stage));
   }
-  // // move down
-  // {
-  //   auto stage = std::make_unique<stages::MoveRelative>("go to mid", cartesian_planner);
-  //   stage->properties().set("marker_ns", "approach_object");
-  //   stage->properties().set("link", hand_frame_);
-  //   stage->properties().configureInitFrom(Stage::PARENT, { "group" });
-  //   stage->setMinMaxDistance(0.25, 0.3);
 
-  //   // Set hand forward direction
-  //   geometry_msgs::Vector3Stamped vec;
-  //   vec.header.frame_id = hand_frame_;
-  //   vec.vector.z = -1.0;
-  //   stage->setDirection(vec);
-  //   t.add(std::move(stage));
-  // }
-  // // turn
-  // {
-  //   auto stage = std::make_unique<stages::MoveRelative>("turn mid", cartesian_planner);
-  //   stage->properties().set("marker_ns", "approach_object");
-  //   stage->properties().set("link", hand_frame_);
-  //   stage->properties().configureInitFrom(Stage::PARENT, { "group" });
-
-  //   // Set hand forward direction
-  //   geometry_msgs::TwistStamped twist;
-  //   twist.header.frame_id = "world";
-  //   twist.twist.angular.z = -3 * M_PI / 4.;
-  //   stage->setDirection(twist);
-  //   t.add(std::move(stage));
-  // }
 
   /****************************************************
    *                                                  *
@@ -278,24 +267,6 @@ void DeepPickPlaceTask::init()
     auto grasp = std::make_unique<SerialContainer>("pick object");
     t.properties().exposeTo(grasp->properties(), { "eef", "hand", "group", "ik_frame" });
     grasp->properties().configureInitFrom(Stage::PARENT, { "eef", "hand", "group", "ik_frame" });
-
-    //     /****************************************************
-    // ---- *               Allow Collision (hand object)   *
-    //   ***************************************************/
-    //     {
-    //       auto stage = std::make_unique<stages::ModifyPlanningScene>("allow collision (hand,object)");
-    //       stage->allowCollisions(
-    //           object, t.getRobotModel()->getJointModelGroup(hand_group_name_)->getLinkModelNamesWithCollisionGeometry(),
-    //           true);
-    //       grasp->insert(std::move(stage));
-    //     }
-    //     {
-    //       auto stage = std::make_unique<stages::ModifyPlanningScene>("allow collision (arm,object)");
-    //       stage->allowCollisions(
-    //         object, t.getRobotModel()->getJointModelGroup(arm_group_name_)->getLinkModelNamesWithCollisionGeometry(),
-    //         true);
-    //       grasp->insert(std::move(stage));
-    //     }
 
 
     /****************************************************
@@ -385,6 +356,13 @@ void DeepPickPlaceTask::init()
       stage->allowCollisions({ object }, support_surfaces_, true);
       grasp->insert(std::move(stage));
     }
+    if (!allowed_collision_.empty())
+    {
+      auto stage = std::make_unique<stages::ModifyPlanningScene>("allow collision (object,allowed_collision_obj)");
+      stage->allowCollisions({ object }, { allowed_collision_ }, true);
+      grasp->insert(std::move(stage));
+    }
+
 
     /****************************************************
   .... *               Lift object                        *
@@ -413,24 +391,18 @@ void DeepPickPlaceTask::init()
       grasp->insert(std::move(stage));
     }
 
+    if (!allowed_collision_.empty())
+    {
+      auto stage = std::make_unique<stages::ModifyPlanningScene>("forbid collision (object,allowed_collision_obj)");
+      stage->allowCollisions({ object }, { allowed_collision_ }, false);
+      grasp->insert(std::move(stage));
+    }
+
+
     // Add grasp container to task
     t.add(std::move(grasp));
   }
 
-  // turn
-  // {
-  //   auto stage = std::make_unique<stages::MoveRelative>("turn back", cartesian_planner);
-  //   stage->properties().set("marker_ns", "approach_object");
-  //   stage->properties().set("link", hand_frame_);
-  //   stage->properties().configureInitFrom(Stage::PARENT, { "group" });
-
-  //   // Set hand forward direction
-  //   geometry_msgs::TwistStamped twist;
-  //   twist.header.frame_id = "world";
-  //   twist.twist.angular.z = M_PI;
-  //   stage->setDirection(twist);
-  //   t.add(std::move(stage));
-  // }
 
   /******************************************************
    *                                                    *
@@ -463,7 +435,7 @@ void DeepPickPlaceTask::init()
       stage->properties().set("marker_ns", "lower_object");
       stage->properties().set("link", hand_frame_);
       stage->properties().configureInitFrom(Stage::PARENT, { "group" });
-      stage->setMinMaxDistance(.03, .13);
+      stage->setMinMaxDistance(.01, .11);
 
       // Set downward direction
       geometry_msgs::Vector3Stamped vec;

@@ -41,6 +41,8 @@ weights_file = /home/sebastian/simply_ws/src/simply_mono/gpd/models/lenet/15chan
 voxelize = 1
 voxel_size = 0.003
 remove_outliers = 0
+workspace = 0.45 0.65 -0.05 0.05 0.1 0.3
+# workspace = -0.1 0.1 -0.3 0.2 0.5 0.8
 # workspace = -0.25 -0.16 -0.06 0.06 0.45 0.75
 
 
@@ -49,7 +51,7 @@ remove_outliers = 0
 
 
 # workspace = 0.3 0.7 -0.2 0.2 0.05 0.45
-workspace = -0.2 0.2 -1.0 0.4 0.55 0.85
+
 # workspace = -2.0 2.0 -2.0 2.0 -2.0 2.0
 # camera_position = 0.5 0 0.7
 # camera_position = 0.15 0 0.04
@@ -64,11 +66,11 @@ tf_cam_opt = 0 0 0 -1.57 0 -1.57
 #   nn_radius: the radius for the neighborhood search
 #   num_orientations: the number of robot hand orientations to evaluate
 #   rotation_axes: the axes about which the point neighborhood gets rotated
-num_samples = 100
+num_samples = 50
 num_threads = 4
 nn_radius = 0.01
-num_orientations = 16
-num_finger_placements = 8
+num_orientations = 8
+num_finger_placements = 12
 hand_axes = 2
 deepen_hand = 0
 # num_samples = 2000
@@ -88,7 +90,7 @@ max_aperture = 0.043
 # workspace_grasps = -1.0 1.0 -1.0 1.0 -1.0 1.0
 # workspace_grasps = -0.25 -0.16 -0.06 0.06 0.3 0.75
 # workspace_grasps = 0.4 0.6 -0.2 0.1 0 0.4
-workspace_grasps = 0.3 0.7 -0.3 0.3 0 0.5
+workspace_grasps = 0.3 0.7 -0.3 0.2 0 0.5
 
 
 # workspace_grasps = -0.3 -0.1 -0.15 0.15 0.25 0.7
@@ -106,7 +108,7 @@ workspace_grasps = 0.3 0.7 -0.3 0.3 0 0.5
 #   direction: the direction to compare against
 #   angle_thresh: angle in radians above which grasps are filtered
 filter_approach_direction = 1 #1
-direction = 1 0 0
+direction = 0 0 -1
 thresh_rad = 0.707
 
 # Clustering of grasps
@@ -115,7 +117,7 @@ min_inliers = 1
 
 # Grasp selection
 #   num_selected: number of selected grasps (sorted by score)
-num_selected = 30
+num_selected = 10
 
 # Visualization
 #   plot_normals: plot the surface normals

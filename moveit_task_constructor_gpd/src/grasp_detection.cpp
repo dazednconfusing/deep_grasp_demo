@@ -130,8 +130,9 @@ void GraspDetection::preemptCallback()
 
 void GraspDetection::sampleGrasps()
 {
+  const Eigen::Isometry3d transform_base_opt = trans_base_cam_ * transform_cam_opt_;
   std::vector<std::unique_ptr<gpd::candidate::Hand>> grasps;  // detect grasp poses
-  grasp_detector_->preprocessPointCloud(*cloud_camera_);      // preprocess the point cloud
+  grasp_detector_->preprocessPointCloud(*cloud_camera_, transform_base_opt);      // preprocess the point cloud
   grasps = grasp_detector_->detectGrasps(*cloud_camera_);     // detect grasps in the point cloud
 
   // Use grasps with score > 0
@@ -210,9 +211,14 @@ void GraspDetection::cloudCallback(const sensor_msgs::PointCloud2::ConstPtr& msg
     Eigen::Matrix3Xd camera_view_point(3, 1);
     camera_view_point << view_point_.at(0), view_point_.at(1), view_point_.at(2);
     cloud_camera_.reset(new gpd::util::Cloud(grasp_cloud, 0, camera_view_point));
-
+    // Grasp detector
+    // grasp_detector_.reset(new gpd::GraspDetector(path_to_gpd_config_));
     // use GPD to find the grasp candidates
     sampleGrasps();
+    feedback_.costs.clear();
+    feedback_.grasp_candidates.clear();
+    result_.grasp_state.clear();
+
   }
 
   goal_active_ = false;
