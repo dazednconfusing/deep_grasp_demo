@@ -4,6 +4,11 @@
      <arg name="block2_args" default="x:=0.5 y:=0, z:=0.139 color:=black" />
      <arg name="block3_args" default="x:=0.5 y:=0, z:=0.1639 color:=black" />
      <arg name="table_args" default="x:=0.5 y:=0 z:=0.05 l:=0.4 w:=0.5 h:=0.1" />
+     <!-- <param name="use_sim_time" value="true" />
+     <arg name="block1_args" default="x:=0.35 y:=-0.2, z:=0.013 color:=green" />
+     <arg name="block2_args" default="x:=0.35 y:=-0.2, z:=0.039 color:=yellow" />
+     <arg name="block3_args" default="x:=0.35 y:=-0.2, z:=0.0639 color:=red" /> -->
+     <!-- <arg name="table_args" default="x:=0.5 y:=0 z:=0.05 l:=0.4 w:=0.5 h:=0.1" /> -->
 
      <arg name="use_gazebo" default="true" />
      <arg name="use_camera" default="true" />
