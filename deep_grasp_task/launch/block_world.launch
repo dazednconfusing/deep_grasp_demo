@@ -1,14 +1,13 @@
 <?xml version="1.0"?>
 <launch>
-     <arg name="block1_args" default="x:=0.5 y:=0, z:=0.113 color:=green" />
+     <!-- <arg name="block1_args" default="x:=0.5 y:=0, z:=0.113 color:=green" />
      <arg name="block2_args" default="x:=0.5 y:=0, z:=0.139 color:=red" />
      <arg name="block3_args" default="x:=0.5 y:=0, z:=0.1639 color:=yellow" />
-     <arg name="table_args" default="x:=0.5 y:=0 z:=0.05 l:=0.4 w:=0.5 h:=0.1" />
-     <!-- <param name="use_sim_time" value="true" />
-     <arg name="block1_args" default="x:=0.35 y:=-0.2, z:=0.013 color:=green" />
-     <arg name="block2_args" default="x:=0.35 y:=-0.2, z:=0.039 color:=yellow" />
-     <arg name="block3_args" default="x:=0.35 y:=-0.2, z:=0.0639 color:=red" /> -->
-     <!-- <arg name="table_args" default="x:=0.5 y:=0 z:=0.05 l:=0.4 w:=0.5 h:=0.1" /> -->
+     <arg name="table_args" default="x:=0.5 y:=0 z:=0.05 l:=0.4 w:=0.5 h:=0.1" /> -->
+     <!-- <param name="use_sim_time" value="true" /> -->
+     <arg name="block1_args" default="x:=0.4 y:=-0.1, z:=0.013 color:=green" />
+     <arg name="block2_args" default="x:=0.4 y:=-0.1, z:=0.039 color:=yellow" />
+     <arg name="block3_args" default="x:=0.4 y:=-0.1, z:=0.0639 color:=red" />
 
      <arg name="use_gazebo" default="true" />
      <arg name="use_camera" default="true" />
@@ -22,8 +21,8 @@
           <arg name="use_camera" value="$(arg use_camera)" />
      </include>
 
-     <param name="table_desc" command="$(find xacro)/xacro $(arg table_args) '$(find deep_grasp_task)/urdf/objects/table.urdf.xacro'" />
-     <node name="spawn_gazebo_table" pkg="gazebo_ros" type="spawn_model" args="-urdf -param table_desc -model table" respawn="false" output="screen" />
+     <!-- <param name="table_desc" command="$(find xacro)/xacro $(arg table_args) '$(find deep_grasp_task)/urdf/objects/table.urdf.xacro'" />
+     <node name="spawn_gazebo_table" pkg="gazebo_ros" type="spawn_model" args="-urdf -param table_desc -model table" respawn="false" output="screen" /> -->
      <param name="block1_desc" command="$(find xacro)/xacro $(arg block1_args) '$(find gazebo_models)/block/block.urdf.xacro'" />
      <node name="spawn_gazebo_block1" pkg="gazebo_ros" type="spawn_model" args="-urdf -param block1_desc -model block1" respawn="false" output="screen" />
      <param name="block2_desc" command="$(find xacro)/xacro $(arg block2_args) '$(find gazebo_models)/block/block.urdf.xacro'" />

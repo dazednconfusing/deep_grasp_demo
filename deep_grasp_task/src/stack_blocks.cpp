@@ -159,8 +159,13 @@ int main(int argc, char** argv)
       ROS_INFO_NAMED(LOGNAME, "Planning succeded");
       if (pnh.param("execute", false))
       {
-        deep_pick_place_task.execute();
+        if (deep_pick_place_task.execute()) {
         ROS_INFO_NAMED(LOGNAME, "Execution complete");
+        }
+        else {
+          ROS_INFO_NAMED(LOGNAME, "Execution failed");
+          break;
+        }
       }
       else
       {
