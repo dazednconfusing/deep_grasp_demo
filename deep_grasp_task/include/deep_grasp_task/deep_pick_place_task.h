@@ -116,6 +116,8 @@ private:
   // Deep grasp properties
   std::string action_name_;
   std::string allowed_collision_;
+  std::string start_surface_;
+  std::string end_surface_;
 
   // Execution
   actionlib::SimpleActionClient<moveit_task_constructor_msgs::ExecuteTaskSolutionAction> execute_;
