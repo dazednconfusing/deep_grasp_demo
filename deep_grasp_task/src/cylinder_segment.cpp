@@ -130,8 +130,8 @@ public:
 
       tf2::doTransform(p, result_.com, tf_world_opt);
       ROS_INFO_NAMED(LOGNAME, "%s com pose: ( %.2f %.2f %.2f)", result_.com.header.frame_id.c_str(), result_.com.pose.position.x, result_.com.pose.position.y, result_.com.pose.position.z);
-      result_.com.pose.position.x += 0.01;
-      result_.com.pose.position.y -= 0.01;
+      result_.com.pose.position.x += 0.01 * (int)(result_.com.pose.position.x > 0);
+      result_.com.pose.position.y += 0.005 * (int)(result_.com.pose.position.y > 0);
       server_->setSucceeded(result_);
     }
     catch (tf2::TransformException& ex) {
