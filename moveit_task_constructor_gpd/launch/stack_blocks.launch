@@ -5,6 +5,7 @@
   <arg name="pcd" default="" />
   <arg name="debug" default="false" />
   <arg name="task" default="stack_blocks" />
+  <arg name="deep_grasps" default="true" />
 
   <arg unless="$(arg debug)" name="launch_prefix" value="" />
   <arg if="$(arg debug)" name="launch_prefix" value="gdb -ex run --args" />
@@ -30,6 +31,7 @@
     <param name="execute" value="true" />
     <param name="action_name" value="$(arg action_name)" />
     <param name="cylinder_segment" value="$(arg cylinder_segment)" />
+    <param name="deep_grasps" value="$(arg deep_grasps)" />
 
     <rosparam command="load" file="$(find deep_grasp_task)/config/block_config.yaml" />
 

@@ -135,5 +135,7 @@ private:
   // Place metrics
   geometry_msgs::Pose place_pose_;
   double place_surface_offset_;
+
+  bool deep_grasps_;
 };
 }  // namespace deep_grasp_task

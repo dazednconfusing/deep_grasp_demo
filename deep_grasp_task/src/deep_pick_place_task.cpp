@@ -37,6 +37,9 @@
 
 #include <deep_grasp_task/deep_pick_place_task.h>
 #include <rosparam_shortcuts/rosparam_shortcuts.h>
+#include <iostream>
+
+
 
 
 namespace deep_grasp_task
@@ -105,9 +108,34 @@ void DeepPickPlaceTask::loadParameters(const std::string& object, const std::str
   errors += !rosparam_shortcuts::get(LOGNAME, pnh, "lift_object_max_dist", lift_object_max_dist_);
   errors += !rosparam_shortcuts::get(LOGNAME, pnh, "place_surface_offset", place_surface_offset_);
   errors += !rosparam_shortcuts::get(LOGNAME, pnh, object + "_place_pose", place_pose_);
+  errors += !rosparam_shortcuts::get(LOGNAME, pnh, "deep_grasps", deep_grasps_);
 
   allowed_collision_ = std::string(allowed_collision);
   rosparam_shortcuts::shutdownIfError(LOGNAME, errors);
+}
+
+
+template <typename T>
+std::unique_ptr<stages::ComputeIK> GenerateGraspWrapper(T&& grasp_generator,
+  const std::string& hand_open_pose, const std::string& obj, const Eigen::Isometry3d& grasp_frame_transform,
+  const std::string& hand_frame, Stage* curr_state) {
+
+  grasp_generator->properties().configureInitFrom(Stage::PARENT);
+  grasp_generator->properties().set("marker_ns", "grasp_pose");
+  grasp_generator->setPreGraspPose(hand_open_pose);
+  grasp_generator->setObject(obj);
+  grasp_generator->setMonitoredStage(curr_state);  // Hook into current state
+
+  // Compute IK
+  auto wrapper = std::make_unique<stages::ComputeIK>(
+    "grasp pose IK", std::move(grasp_generator));
+  wrapper->setMaxIKSolutions(8);
+  wrapper->setMinSolutionDistance(1.0);
+  wrapper->setIKFrame(grasp_frame_transform, hand_frame);
+  wrapper->properties().configureInitFrom(Stage::PARENT, { "eef", "group" });
+  wrapper->properties().configureInitFrom(Stage::INTERFACE, { "target_pose" });
+  return wrapper;
+
 }
 
 void DeepPickPlaceTask::init()
@@ -303,24 +331,28 @@ void DeepPickPlaceTask::init()
 
     /****************************************************
   ---- *               Generate Grasp Pose                *
-     ***************************************************/
-    {
-      auto stage = std::make_unique<stages::DeepGraspPose<moveit_task_constructor_msgs::SampleGraspPosesAction>>(
-          action_name_, "generate grasp pose");
-      stage->properties().configureInitFrom(Stage::PARENT);
-      stage->properties().set("marker_ns", "grasp_pose");
-      stage->setPreGraspPose(hand_open_pose_);
-      stage->setObject(object);
-      stage->setMonitoredStage(current_state_ptr);  // Hook into current state
 
-      // Compute IK
-      auto wrapper = std::make_unique<stages::ComputeIK>("grasp pose IK", std::move(stage));
-      wrapper->setMaxIKSolutions(8);
-      wrapper->setMinSolutionDistance(1.0);
-      wrapper->setIKFrame(grasp_frame_transform_, hand_frame_);
-      wrapper->properties().configureInitFrom(Stage::PARENT, { "eef", "group" });
-      wrapper->properties().configureInitFrom(Stage::INTERFACE, { "target_pose" });
-      grasp->insert(std::move(wrapper));
+
+        ***************************************************/
+
+    {
+
+      if (deep_grasps_) {
+        auto dg = std::make_unique<stages::DeepGraspPose<moveit_task_constructor_msgs::SampleGraspPosesAction >>(
+          action_name_, "generate DEEP grasp pose");
+        std::unique_ptr<stages::ComputeIK> wrapper = GenerateGraspWrapper(std::move(dg), hand_open_pose_, object, grasp_frame_transform_, hand_frame_, current_state_ptr);
+        grasp->insert(std::move(wrapper));
+      }
+      else {
+        auto gg = std::make_unique< stages::GenerateGraspPose>("generate grasp pose");
+
+        gg->setAngleDelta(4 * M_PI / 16);
+        std::unique_ptr<stages::ComputeIK> wrapper = GenerateGraspWrapper(std::move(gg), hand_open_pose_, object, grasp_frame_transform_, hand_frame_, current_state_ptr);
+        grasp->insert(std::move(wrapper));
+      }
+      //   // stage.reset(std::reinterpret_cast<stages::GenerateGraspPose>(new stages::GenerateGraspPose));
+      // }
+
 
     }
 
@@ -576,6 +608,7 @@ void DeepPickPlaceTask::init()
     t.add(std::move(stage));
   }
 }
+
 
 bool DeepPickPlaceTask::plan()
 {
