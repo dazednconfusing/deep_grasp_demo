@@ -17,4 +17,7 @@
   <depend>moveit_core</depend>
   <depend>roscpp</depend>
   <depend>rosparam_shortcuts</depend>
+  <depend>deep_grasp_msgs</depend>
+  <depend>pcl_ros</depend>
+  <depend>pcl_conversions</depend>
 </package>

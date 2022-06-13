@@ -38,6 +38,7 @@
 #include <deep_grasp_task/deep_pick_place_task.h>
 #include <rosparam_shortcuts/rosparam_shortcuts.h>
 
+
 namespace deep_grasp_task
 {
 constexpr char LOGNAME[] = "pick_place_task";
@@ -98,6 +99,8 @@ void DeepPickPlaceTask::loadParameters(const std::string& object, const std::str
   // Pick/Place metrics
   errors += !rosparam_shortcuts::get(LOGNAME, pnh, "approach_object_min_dist", approach_object_min_dist_);
   errors += !rosparam_shortcuts::get(LOGNAME, pnh, "approach_object_max_dist", approach_object_max_dist_);
+  errors += !rosparam_shortcuts::get(LOGNAME, pnh, "lower_object_min_dist", lower_object_min_dist_);
+  errors += !rosparam_shortcuts::get(LOGNAME, pnh, "lower_object_max_dist", lower_object_max_dist_);
   errors += !rosparam_shortcuts::get(LOGNAME, pnh, "lift_object_min_dist", lift_object_min_dist_);
   errors += !rosparam_shortcuts::get(LOGNAME, pnh, "lift_object_max_dist", lift_object_max_dist_);
   errors += !rosparam_shortcuts::get(LOGNAME, pnh, "place_surface_offset", place_surface_offset_);
@@ -140,6 +143,18 @@ void DeepPickPlaceTask::init()
   t.setProperty("hand_grasping_frame", hand_frame_);
   t.setProperty("ik_frame", hand_frame_);
 
+  // auto scene = std::make_shared<planning_scene::PlanningScene>(t.getRobotModel());
+  // {
+  //   auto& state = scene->getCurrentStateNonConst();
+  //   state.setToDefaultValues(state.getJointModelGroup(arm_group_name_), "Sleep");
+
+    // auto fixed = std::make_unique<stages::FixedState>("initial state");
+  //   fixed->setState(scene);
+  //   t.add(std::move(fixed));
+  // }
+
+
+
   /****************************************************
    *                                                  *
    *               Current State                      *
@@ -155,7 +170,7 @@ void DeepPickPlaceTask::init()
 ---- *               Allow Collision (hand object)   *
   ***************************************************/
     {
-      auto stage = std::make_unique<stages::ModifyPlanningScene>("allow collision (hand,object)");
+      auto stage = std::make_unique<stages::ModifyPlanningScene>("allow collision (hand,object) current state 1");
       stage->allowCollisions(
         object, t.getRobotModel()->getJointModelGroup(hand_group_name_)->getLinkModelNamesWithCollisionGeometry(),
         true);
@@ -165,24 +180,24 @@ void DeepPickPlaceTask::init()
     auto current_state = std::make_unique<stages::CurrentState>("current state");
 
     // Verify that object is not attached
-    auto applicability_filter =
-        std::make_unique<stages::PredicateFilter>("applicability test", std::move(current_state));
-    applicability_filter->setPredicate([object](const SolutionBase& s, std::string& comment) {
-      if (s.start()->scene()->getCurrentState().hasAttachedBody(object))
-      {
-        comment = "object with id '" + object + "' is already attached and cannot be picked";
-        return false;
-      }
-      return true;
-    });
+    // auto applicability_filter =
+    //     std::make_unique<stages::PredicateFilter>("applicability test", std::move(current_state));
+    // applicability_filter->setPredicate([object](const SolutionBase& s, std::string& comment) {
+    //   if (s.start()->scene()->getCurrentState().hasAttachedBody(object))
+    //   {
+    //     comment = "object with id '" + object + "' is already attached and cannot be picked";
+    //     return false;
+    //   }
+    //   return true;
+    // });
 
-    current->insert(std::move(applicability_filter));
+    current->insert(std::move(current_state));
 
     /****************************************************
 ---- *               Allow Collision (hand object)   *
 ***************************************************/
 
-      auto stage = std::make_unique<stages::ModifyPlanningScene>("allow collision (hand,object)");
+    auto stage = std::make_unique<stages::ModifyPlanningScene>("allow collision (hand,object) current state 2");
       stage->allowCollisions(
         object, t.getRobotModel()->getJointModelGroup(hand_group_name_)->getLinkModelNamesWithCollisionGeometry(),
         true);
@@ -199,7 +214,7 @@ void DeepPickPlaceTask::init()
 ---- *          Forbid collision (hand, object)        *
 *****************************************************/
   {
-    auto stage = std::make_unique<stages::ModifyPlanningScene>("forbid collision (hand,object)");
+    auto stage = std::make_unique<stages::ModifyPlanningScene>("forbid collision (hand,object)1");
     stage->allowCollisions(
       object_name_, t.getRobotModel()->getJointModelGroup(hand_group_name_)->getLinkModelNamesWithCollisionGeometry(),
       false);
@@ -212,7 +227,7 @@ void DeepPickPlaceTask::init()
    *                                                  *
    ***************************************************/
   {  // Open Hand
-    auto stage = std::make_unique<stages::MoveTo>("open hand", sampling_planner);
+    auto stage = std::make_unique<stages::MoveTo>("open hand pick", sampling_planner);
     stage->setGroup(hand_group_name_);
     stage->setGoal(hand_open_pose_);
     t.add(std::move(stage));
@@ -244,12 +259,20 @@ void DeepPickPlaceTask::init()
     grasp->properties().configureInitFrom(Stage::PARENT, { "eef", "hand", "group", "ik_frame" });
 
     {
-      auto stage = std::make_unique<stages::ModifyPlanningScene>("forbid collision (hand,object)");
+      auto stage = std::make_unique<stages::ModifyPlanningScene>("forbid collision (hand,object) pick ");
       stage->allowCollisions(
         object, t.getRobotModel()->getJointModelGroup(hand_group_name_)->getLinkModelNamesWithCollisionGeometry(),
         false);
       grasp->insert(std::move(stage));
     }
+    {
+      auto stage = std::make_unique<stages::ModifyPlanningScene>("allow collision (hand,object) pick ");
+      stage->allowCollisions(
+        object, t.getRobotModel()->getJointModelGroup(hand_group_name_)->getLinkModelNamesWithCollisionGeometry(),
+        true);
+      grasp->insert(std::move(stage));
+    }
+
 
 
     /****************************************************
@@ -264,14 +287,14 @@ void DeepPickPlaceTask::init()
 
       // Set hand forward direction
       geometry_msgs::Vector3Stamped vec;
-      vec.header.frame_id = hand_frame_;
-      vec.vector.x = 1.0;
+      vec.header.frame_id = world_frame_;
+      vec.vector.z = -1.0;
       stage->setDirection(vec);
       grasp->insert(std::move(stage));
     }
 
     {
-      auto stage = std::make_unique<stages::ModifyPlanningScene>("allow collision (hand,object)");
+      auto stage = std::make_unique<stages::ModifyPlanningScene>("allow collision (hand,object) pick 1");
       stage->allowCollisions(
         object, t.getRobotModel()->getJointModelGroup(hand_group_name_)->getLinkModelNamesWithCollisionGeometry(),
         true);
@@ -305,7 +328,7 @@ void DeepPickPlaceTask::init()
 ---- *               Allow Collision (hand object)   *
   ***************************************************/
     {
-      auto stage = std::make_unique<stages::ModifyPlanningScene>("allow collision (hand,object)");
+      auto stage = std::make_unique<stages::ModifyPlanningScene>("allow collision (hand,object) pick 2");
       stage->allowCollisions(
         object, t.getRobotModel()->getJointModelGroup(hand_group_name_)->getLinkModelNamesWithCollisionGeometry(),
         true);
@@ -337,7 +360,7 @@ void DeepPickPlaceTask::init()
   .... *               Allow collision (object support)   *
      ***************************************************/
     {
-      auto stage = std::make_unique<stages::ModifyPlanningScene>("allow collision (object,support)");
+      auto stage = std::make_unique<stages::ModifyPlanningScene>("allow collision (object,support)1");
       stage->allowCollisions({ object }, { start_surface_, end_surface_ }, true);
       attach_object_stage = stage.get();
       grasp->insert(std::move(stage));
@@ -375,7 +398,7 @@ void DeepPickPlaceTask::init()
   .... *               Forbid collision (object support)  *
      ***************************************************/
     {
-      auto stage = std::make_unique<stages::ModifyPlanningScene>("forbid collision (object,surface)");
+      auto stage = std::make_unique<stages::ModifyPlanningScene>("forbid collision (object, start surface)");
       stage->allowCollisions({ object }, { start_surface_ }, false);
       grasp->insert(std::move(stage));
     }
@@ -416,7 +439,7 @@ void DeepPickPlaceTask::init()
       stage->properties().set("marker_ns", "lower_object");
       stage->properties().set("link", hand_frame_);
       stage->properties().configureInitFrom(Stage::PARENT, { "group" });
-      stage->setMinMaxDistance(.01, .11);
+      stage->setMinMaxDistance(lower_object_min_dist_, lower_object_max_dist_);
 
       // Set downward direction
       geometry_msgs::Vector3Stamped vec;
@@ -493,7 +516,7 @@ void DeepPickPlaceTask::init()
   ---- *          Open Hand                              *
      *****************************************************/
     {
-      auto stage = std::make_unique<stages::MoveTo>("open hand", sampling_planner);
+      auto stage = std::make_unique<stages::MoveTo>("open hand place", sampling_planner);
       // stage->properties().property("group").configureInitFrom(Stage::PARENT, hand_group_name_);
       stage->setGroup(hand_group_name_);
       stage->setGoal(hand_open_pose_);
@@ -515,7 +538,7 @@ void DeepPickPlaceTask::init()
     {
       auto stage = std::make_unique<stages::MoveRelative>("retreat after place", cartesian_planner);
       stage->properties().configureInitFrom(Stage::PARENT, { "group" });
-      stage->setMinMaxDistance(.05, .3);
+      stage->setMinMaxDistance(lift_object_min_dist_, lift_object_max_dist_);
       stage->setIKFrame(hand_frame_);
       stage->properties().set("marker_ns", "retreat");
       geometry_msgs::Vector3Stamped vec;
@@ -533,7 +556,7 @@ void DeepPickPlaceTask::init()
 ---- *          Forbid collision (hand, object)        *
 *****************************************************/
   {
-    auto stage = std::make_unique<stages::ModifyPlanningScene>("forbid collision (hand,object)");
+    auto stage = std::make_unique<stages::ModifyPlanningScene>("forbid collision (hand,object) final");
     stage->allowCollisions(
       object_name_, t.getRobotModel()->getJointModelGroup(hand_group_name_)->getLinkModelNamesWithCollisionGeometry(),
       false);
@@ -580,6 +603,19 @@ bool DeepPickPlaceTask::plan()
 
 bool DeepPickPlaceTask::execute()
 {
+  // moveit_msgs::MoveItErrorCodes execute_result;
+  // execute_result = task_->execute(*task_->solutions().front());
+  // // // If you want to inspect the goal message, use this instead:
+  // // actionlib::SimpleActionClient<moveit_task_constructor_msgs::ExecuteTaskSolutionAction>
+  // // execute("execute_task_solution", true); execute.waitForServer();
+  // // moveit_task_constructor_msgs::ExecuteTaskSolutionGoal execute_goal;
+  // // task_->solutions().front()->fillMessage(execute_goal.solution);
+  // // execute.sendGoalAndWait(execute_goal);
+  // // execute_result = execute.getResult()->error_code;
+
+  // if (execute_result.val != moveit_msgs::MoveItErrorCodes::SUCCESS) {
+  //   ROS_ERROR_STREAM("Task execution failed and returned: " << execute_result.val);
+  // }
   ROS_INFO_NAMED(LOGNAME, "Executing solution trajectory");
   moveit_task_constructor_msgs::ExecuteTaskSolutionGoal execute_goal;
   task_->solutions().front()->fillMessage(execute_goal.solution);

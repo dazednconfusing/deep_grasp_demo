@@ -51,6 +51,7 @@
 #include <geometric_shapes/shape_operations.h>
 #include <moveit_task_constructor_msgs/SampleGraspPosesAction.h>
 #include <actionlib/client/simple_action_client.h>
+#include <deep_grasp_msgs/CylinderSegmentAction.h>
 
 constexpr char LOGNAME[] = "deep_grasp_demo";
 
@@ -134,13 +135,46 @@ int main(int argc, char** argv)
     spawnObject(psi, createTable());
   }
   std::vector<std::string> spawn_objs;
-  std::size_t error = 0;
-  error += !rosparam_shortcuts::get(LOGNAME, pnh, "spawn_objs", spawn_objs);
-  rosparam_shortcuts::shutdownIfError(LOGNAME, error);
+  bool cylinder_segment;
+  std::size_t errors = 0;
+  errors += !rosparam_shortcuts::get(LOGNAME, pnh, "spawn_objs", spawn_objs);
+  errors += !rosparam_shortcuts::get(LOGNAME, pnh, "cylinder_segment", cylinder_segment);
+  rosparam_shortcuts::shutdownIfError(LOGNAME, errors);
   // Construct and run task
 
   std::string prev_obj = "";
   deep_grasp_task::DeepPickPlaceTask deep_pick_place_task("deep_pick_place_task", nh);
+
+  deep_grasp_msgs::CylinderSegmentResultConstPtr result;
+  if (cylinder_segment) {
+    actionlib::SimpleActionClient<deep_grasp_msgs::CylinderSegmentAction> ac("cylinder_segment", true);
+
+
+    ROS_INFO("Waiting for cylinder segment action server to start.");
+    // wait for the action server to start
+    ac.waitForServer(); //will wait for infinite time
+    ROS_INFO("Cylinder segment started");
+    deep_grasp_msgs::CylinderSegmentGoal goal;
+    ac.sendGoal(goal);
+
+    //wait for the action to return
+    bool finished_before_timeout = ac.waitForResult(ros::Duration(180.0));
+
+    if (finished_before_timeout)
+    {
+      actionlib::SimpleClientGoalState state = ac.getState();
+      ROS_INFO("Action finished: %s", state.toString().c_str());
+    }
+    else {
+      ROS_INFO("Action did not finish before the time out.");
+
+      //exit
+      return 0;
+    }
+    result = ac.getResult();
+    ROS_WARN_NAMED(LOGNAME, "X,Y %s RESULT: (%.2f, %.2f)", result->com.header.frame_id.c_str(), result->com.pose.position.x, result->com.pose.position.y);
+  }
+
   for (std::string obj : spawn_objs) {
     if (obj == "block2") {
       prev_obj = "block3";
@@ -148,7 +182,19 @@ int main(int argc, char** argv)
     if (obj == "block1") {
       prev_obj = "block2";
     }
-    spawnObject(psi, createObject(obj));
+
+
+    moveit_msgs::CollisionObject cobj = createObject(obj);
+    if (cylinder_segment) {
+      cobj.primitive_poses.back().position.x = result->com.pose.position.x;
+      cobj.primitive_poses.back().position.y = result->com.pose.position.y;
+    }
+    ROS_WARN_NAMED(LOGNAME, " COBJ %s RESULT: (%.2f, %.2f, %.2f)",
+      cobj.header.frame_id.c_str(),
+      cobj.primitive_poses.back().position.x,
+      cobj.primitive_poses.back().position.y,
+      cobj.primitive_poses.back().position.z);
+    spawnObject(psi, cobj);
     ros::Duration(0.5).sleep(); // sleep for half a second
     deep_pick_place_task.loadParameters(obj, prev_obj);
     prev_obj = obj;

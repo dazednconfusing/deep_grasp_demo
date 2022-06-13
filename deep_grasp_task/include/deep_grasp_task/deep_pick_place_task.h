@@ -50,6 +50,7 @@
 
 // MTC
 #include <moveit/task_constructor/task.h>
+#include <moveit/task_constructor/stages/fixed_state.h>
 #include <moveit/task_constructor/stages/compute_ik.h>
 #include <moveit/task_constructor/stages/connect.h>
 #include <moveit/task_constructor/stages/current_state.h>
@@ -126,6 +127,8 @@ private:
   Eigen::Isometry3d grasp_frame_transform_;
   double approach_object_min_dist_;
   double approach_object_max_dist_;
+  double lower_object_min_dist_;
+  double lower_object_max_dist_;
   double lift_object_min_dist_;
   double lift_object_max_dist_;
 

@@ -19,7 +19,13 @@ find_package(catkin REQUIRED COMPONENTS
 	moveit_task_constructor_core
 	moveit_task_constructor_msgs
   roscpp
+  pcl_ros
+  pcl_conversions
+  tf2_ros
+  tf2
+  tf2_geometry_msgs
 	rosparam_shortcuts
+  deep_grasp_msgs
 )
 
 ###################################
@@ -29,6 +35,7 @@ catkin_package(
  INCLUDE_DIRS include
  CATKIN_DEPENDS
 	moveit_task_constructor_msgs
+  deep_grasp_msgs
  	roscpp
 )
 
@@ -66,6 +73,10 @@ add_executable(stack_blocks
 							 src/deep_pick_place_task.cpp
 )
 
+add_executable(cylinder_segment
+ 							 src/cylinder_segment.cpp
+)
+
 # Specify libraries to link a library or executable target against
 target_link_libraries(deep_grasp_demo
                       ${catkin_LIBRARIES}
@@ -77,6 +88,9 @@ target_link_libraries(salad_demo
                       ${catkin_LIBRARIES}
 )
 target_link_libraries(stack_blocks
+                      ${catkin_LIBRARIES}
+)
+target_link_libraries(cylinder_segment
                       ${catkin_LIBRARIES}
 )
 

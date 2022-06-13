@@ -9,6 +9,11 @@
   <arg unless="$(arg debug)" name="launch_prefix" value="" />
   <arg if="$(arg debug)" name="launch_prefix" value="gdb -ex run --args" />
 
+  <!-- Cylinder Segment Params. -->
+  <arg name="cylinder_segment" default="true" />
+  <arg name="goal_active" default="false" />
+  <arg name="add_cylinder" default="false" />
+
   <arg name="load_cloud" default="false" doc="load point cloud from file" />
 
   <arg name="action_name" value="generate_grasps" doc="action name space" />
@@ -24,9 +29,15 @@
   <node name="mtc_task" pkg="deep_grasp_task" type="$(arg task)" output="screen" launch-prefix="$(arg launch_prefix)">
     <param name="execute" value="true" />
     <param name="action_name" value="$(arg action_name)" />
+    <param name="cylinder_segment" value="$(arg cylinder_segment)" />
 
     <rosparam command="load" file="$(find deep_grasp_task)/config/block_config.yaml" />
 
+  </node>
+
+  <node if="$(arg cylinder_segment)" name="cylinder_segment" pkg="deep_grasp_task" type="cylinder_segment" output="screen" launch-prefix="$(arg launch_prefix)">
+    <param name="goal_active" value="$(arg goal_active)" />
+    <param name="add_cylinder" value="$(arg add_cylinder)" />
   </node>
 
 
