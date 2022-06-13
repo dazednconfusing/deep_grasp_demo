@@ -52,6 +52,7 @@
 #include <moveit_task_constructor_msgs/SampleGraspPosesAction.h>
 #include <actionlib/client/simple_action_client.h>
 #include <deep_grasp_msgs/CylinderSegmentAction.h>
+#include <sensor_msgs/PointCloud2.h>
 
 constexpr char LOGNAME[] = "deep_grasp_demo";
 
@@ -195,10 +196,16 @@ int main(int argc, char** argv)
       cobj.primitive_poses.back().position.y,
       cobj.primitive_poses.back().position.z);
     spawnObject(psi, cobj);
-    ros::Duration(0.5).sleep(); // sleep for half a second
+    // sleep for half a second
     deep_pick_place_task.loadParameters(obj, prev_obj);
     prev_obj = obj;
+
     deep_pick_place_task.init();
+    ROS_INFO_NAMED(LOGNAME, "Waiting for octomap update");
+    ros::topic::waitForMessage<sensor_msgs::PointCloud2>("move_group/filtered_cloud");
+    ros::Duration(0.5).sleep();
+    ros::topic::waitForMessage<sensor_msgs::PointCloud2>("move_group/filtered_cloud");
+    ROS_INFO_NAMED(LOGNAME, "Finished waiting for octomap update");
 
     if (deep_pick_place_task.plan())
     {
