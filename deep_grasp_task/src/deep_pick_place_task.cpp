@@ -129,7 +129,7 @@ std::unique_ptr<stages::ComputeIK> GenerateGraspWrapper(T&& grasp_generator,
   // Compute IK
   auto wrapper = std::make_unique<stages::ComputeIK>(
     "grasp pose IK", std::move(grasp_generator));
-  wrapper->setMaxIKSolutions(8);
+  wrapper->setMaxIKSolutions(1);
   wrapper->setMinSolutionDistance(1.0);
   wrapper->setIKFrame(grasp_frame_transform, hand_frame);
   wrapper->properties().configureInitFrom(Stage::PARENT, { "eef", "group" });
@@ -519,7 +519,7 @@ void DeepPickPlaceTask::init()
 
       // Compute IK
       auto wrapper = std::make_unique<stages::ComputeIK>("place pose IK", std::move(stage));
-      wrapper->setMaxIKSolutions(2);
+      wrapper->setMaxIKSolutions(1);
       wrapper->setIKFrame(grasp_frame_transform_, hand_frame_);
       wrapper->properties().configureInitFrom(Stage::PARENT, { "eef", "group" });
       wrapper->properties().configureInitFrom(Stage::INTERFACE, { "target_pose" });
