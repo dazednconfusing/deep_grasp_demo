@@ -26,7 +26,7 @@
      <include file="$(find interbotix_xslocobot_moveit)/launch/xslocobot_moveit.launch">
           <arg name="use_gazebo" value="$(arg use_gazebo)" />
           <arg name="use_fake" value="$(arg use_fake)" />
-          <arg name="use_moveit_rviz" value="true" />
+          <arg name="use_moveit_rviz" value="false" />
           <arg name="use_camera" value="$(arg use_camera)" />
           <arg name="use_actual" value="$(arg use_actual)" />
      </include>
