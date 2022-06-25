@@ -1,0 +1,62 @@
+<?xml version="1.0"?>
+<launch>
+  <arg name="object" default="blocks" />
+
+  <arg name="pcd" default="" />
+  <arg name="debug" default="false" />
+  <arg name="task" default="stack_blocks" />
+  <arg name="deep_grasps" default="true" />
+  <arg name="y_offset" default="0.015" />
+  <arg name="x_offset" default="0" />
+
+  <arg unless="$(arg debug)" name="launch_prefix" value="" />
+  <arg if="$(arg debug)" name="launch_prefix" value="gdb -ex run --args" />
+
+  <!-- Cylinder Segment Params. -->
+  <arg name="cylinder_segment" default="true" />
+  <arg name="goal_active" default="false" />
+  <arg name="add_cylinder" default="false" />
+
+  <arg name="load_cloud" default="false" doc="load point cloud from file" />
+
+  <arg name="action_name" value="generate_grasps" doc="action name space" />
+  <arg name="frame_id" value="world" doc="frame of the grasps sent to MTC" />
+  <arg unless="$(arg load_cloud)" name="point_cloud_topic" value="/camera/depth/color/points" doc="point cloud topic name" />
+  <arg if="$(eval arg('load_cloud') and arg('pcd') == '')" name="path_to_pcd_file" value="$(find moveit_task_constructor_gpd)/data/pointclouds/$(arg object).pcd" doc="path to point cloud file" />
+
+  <arg if="$(eval arg('load_cloud') and arg('pcd') != '')" name="path_to_pcd_file" value="$(find moveit_task_constructor_gpd)/data/pointclouds/$(arg pcd).pcd" doc="path to point cloud file" />
+  <!-- rg('pcd') != '')" name="path_to_pcd_file" value="$(find moveit_task_constructor_gpd)/data/pointclouds/$(arg pcd).pcd" doc="path to point cloud file"/> -->
+  <arg name="path_to_gpd_config" value="$(find moveit_task_constructor_gpd)/config/gpd_config.yaml" doc="path to GPD config and gripper params file" />
+
+  <!-- Run MTC pick and place -->
+  <node name="mtc_task" pkg="deep_grasp_task" type="$(arg task)" output="screen" launch-prefix="$(arg launch_prefix)">
+    <param name="execute" value="true" />
+    <param name="action_name" value="$(arg action_name)" />
+    <param name="cylinder_segment" value="$(arg cylinder_segment)" />
+    <param name="deep_grasps" value="$(arg deep_grasps)" />
+
+    <rosparam command="load" file="$(find deep_grasp_task)/config/block_config.yaml" />
+
+  </node>
+
+  <node if="$(arg cylinder_segment)" name="cylinder_segment" pkg="deep_grasp_task" type="cylinder_segment" output="screen" launch-prefix="$(arg launch_prefix)">
+    <param name="goal_active" value="$(arg goal_active)" />
+    <param name="add_cylinder" value="$(arg add_cylinder)" />
+    <param name="y_offset" value="$(arg y_offset)" />
+    <param name="x_offset" value="$(arg x_offset)" />
+  </node>
+
+
+  <!-- Grasp detection using GPD -->
+  <node unless="$(arg cylinder_segment)" name="grasp_cloud_detection" pkg="moveit_task_constructor_gpd" type="grasp_cloud_detection" output="screen" launch-prefix="$(arg launch_prefix)">
+    <!-- <node ns="locobot" name="grasp_cloud_detection" pkg="moveit_task_constructor_gpd" type="grasp_cloud_detection" output="screen"> -->
+    <param if="$(arg load_cloud)" name="path_to_pcd_file" value="$(arg path_to_pcd_file)" />
+    <param unless="$(arg load_cloud)" name="point_cloud_topic" value="$(arg point_cloud_topic)" />
+    <rosparam command="load" file="$(find deep_grasp_task)/config/calib/camera.yaml" />
+    <rosparam param="view_point">[0, 0, 0]</rosparam>
+    <param name="load_cloud" value="$(arg load_cloud)" />
+    <param name="action_name" value="$(arg action_name)" />
+    <param name="frame_id" value="$(arg frame_id)" />
+    <param name="path_to_gpd_config" value="$(arg path_to_gpd_config)" />
+  </node>
+</launch>
