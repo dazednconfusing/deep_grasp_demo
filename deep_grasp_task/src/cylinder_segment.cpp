@@ -72,12 +72,9 @@ public:
     size_t errors = 0;
     errors += !rosparam_shortcuts::get(LOGNAME, pnh, "goal_active", goal_active_);
     errors += !rosparam_shortcuts::get(LOGNAME, pnh, "add_cylinder", add_cylinder_);
-    <<<<<< < HEAD
-      ====== =
-      errors += !rosparam_shortcuts::get(LOGNAME, pnh, "y_offset", y_offset_);
+    errors += !rosparam_shortcuts::get(LOGNAME, pnh, "y_offset", y_offset_);
     errors += !rosparam_shortcuts::get(LOGNAME, pnh, "x_offset", x_offset_);
-    >>>>>> > Real works sometimes
-      rosparam_shortcuts::shutdownIfError(LOGNAME, errors);
+    rosparam_shortcuts::shutdownIfError(LOGNAME, errors);
   }
 
   void init()
