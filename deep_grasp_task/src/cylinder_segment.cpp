@@ -61,6 +61,7 @@ public:
   {
     loadParameters();
     init();
+    ROS_INFO("x_offset: %.2f, y_offset: %.2f", x_offset_, y_offset_);
   }
 
   void loadParameters()
@@ -123,9 +124,7 @@ public:
     p.pose.orientation.z = axis.z() * sin(angle / 2);
     p.pose.orientation.w = cos(angle / 2);
 
-    ROS_INFO_NAMED(LOGNAME, "com pose: ( %.2f %.2f %.2f)", p.pose.position.x, p.pose.position.y, p.pose.position.z);
-
-
+    ROS_INFO_NAMED(LOGNAME, "%s com pose: ( %.2f %.2f %.2f)", p.header.frame_id.c_str(), p.pose.position.x, p.pose.position.y, p.pose.position.z);
 
 
     geometry_msgs::TransformStamped tf_world_opt;
@@ -137,6 +136,7 @@ public:
       ROS_INFO_NAMED(LOGNAME, "%s com pose: ( %.2f %.2f %.2f)", result_.com.header.frame_id.c_str(), result_.com.pose.position.x, result_.com.pose.position.y, result_.com.pose.position.z);
       result_.com.pose.position.x += x_offset_ * (result_.com.pose.position.x > 0 ? 1 : -1);
       result_.com.pose.position.y += y_offset_ * (result_.com.pose.position.y > 0 ? 1 : -1);
+      ROS_INFO_NAMED(LOGNAME, "OFFSET %s com pose: ( %.2f %.2f %.2f)", result_.com.header.frame_id.c_str(), result_.com.pose.position.x, result_.com.pose.position.y, result_.com.pose.position.z);
       server_->setSucceeded(result_);
     }
     catch (tf2::TransformException& ex) {
