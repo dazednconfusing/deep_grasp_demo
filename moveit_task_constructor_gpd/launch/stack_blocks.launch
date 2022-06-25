@@ -28,6 +28,12 @@
   <!-- rg('pcd') != '')" name="path_to_pcd_file" value="$(find moveit_task_constructor_gpd)/data/pointclouds/$(arg pcd).pcd" doc="path to point cloud file"/> -->
   <arg name="path_to_gpd_config" value="$(find moveit_task_constructor_gpd)/config/gpd_config.yaml" doc="path to GPD config and gripper params file" />
 
+  <arg name="rviz_config" default="mtc_salad.rviz" />
+  <!-- Run rviz with prepared config -->
+  <include file="$(find interbotix_xslocobot_moveit)/launch/moveit_rviz.launch">
+    <arg name="rviz_config" value="$(find moveit_task_constructor_demo)/config/$(arg rviz_config)" />
+  </include>
+
   <!-- Run MTC pick and place -->
   <node name="mtc_task" pkg="deep_grasp_task" type="$(arg task)" output="screen" launch-prefix="$(arg launch_prefix)">
     <param name="execute" value="true" />
