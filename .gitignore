@@ -9,3 +9,4 @@ srv_gen/
 *.a
 !*.c
 !Makefile
+**/*pcl-**/*

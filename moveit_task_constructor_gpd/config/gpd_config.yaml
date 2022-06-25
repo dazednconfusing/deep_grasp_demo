@@ -34,7 +34,7 @@ image_size = 60
 image_num_channels = 15
 
 # Path to directory that contains neural network parameters
-weights_file = /home/sebastian/simply_ws/src/simply_mono/gpd/models/lenet/15channels/params/
+weights_file = /home/locobot/simply_ws/src/simply_mono/gpd/models/lenet/15channels/params/
 
 # Preprocessing of point cloud
 #   voxelize: if the cloud gets voxelized/downsampled

@@ -71,7 +71,12 @@ public:
     size_t errors = 0;
     errors += !rosparam_shortcuts::get(LOGNAME, pnh, "goal_active", goal_active_);
     errors += !rosparam_shortcuts::get(LOGNAME, pnh, "add_cylinder", add_cylinder_);
-    rosparam_shortcuts::shutdownIfError(LOGNAME, errors);
+    <<<<<< < HEAD
+      ====== =
+      errors += !rosparam_shortcuts::get(LOGNAME, pnh, "y_offset", y_offset_);
+    errors += !rosparam_shortcuts::get(LOGNAME, pnh, "x_offset", x_offset_);
+    >>>>>> > Real works sometimes
+      rosparam_shortcuts::shutdownIfError(LOGNAME, errors);
   }
 
   void init()
@@ -130,8 +135,8 @@ public:
 
       tf2::doTransform(p, result_.com, tf_world_opt);
       ROS_INFO_NAMED(LOGNAME, "%s com pose: ( %.2f %.2f %.2f)", result_.com.header.frame_id.c_str(), result_.com.pose.position.x, result_.com.pose.position.y, result_.com.pose.position.z);
-      result_.com.pose.position.x += 0.01 * (int)(result_.com.pose.position.x > 0);
-      result_.com.pose.position.y += 0.005 * (int)(result_.com.pose.position.y > 0);
+      result_.com.pose.position.x += x_offset_ * (result_.com.pose.position.x > 0 ? 1 : -1);
+      result_.com.pose.position.y += y_offset_ * (result_.com.pose.position.y > 0 ? 1 : -1);
       server_->setSucceeded(result_);
     }
     catch (tf2::TransformException& ex) {
@@ -350,7 +355,7 @@ public:
     pass.setInputCloud(cloud);
     pass.setFilterFieldName("z");
     // min and max values in z axis to keep
-    pass.setFilterLimits(0.35, 1.15);
+    pass.setFilterLimits(0.35, 0.65);
     pass.filter(*cloud);
   }
 
@@ -467,6 +472,8 @@ private:
   bool goal_active_ = false;
   bool add_cylinder_ = false;
   bool new_cylinder_found_ = false;
+  double y_offset_ = 0;
+  double x_offset_ = 0;
   deep_grasp_msgs::CylinderSegmentActionGoalPtr goal_;
   std::unique_ptr<actionlib::SimpleActionServer<deep_grasp_msgs::CylinderSegmentAction>>
     server_;
