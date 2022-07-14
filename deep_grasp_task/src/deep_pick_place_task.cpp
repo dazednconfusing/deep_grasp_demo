@@ -338,16 +338,27 @@ void DeepPickPlaceTask::init()
     {
 
       if (deep_grasps_) {
-        auto dg = std::make_unique<stages::DeepGraspPose<moveit_task_constructor_msgs::SampleGraspPosesAction >>(
+        auto stage = std::make_unique<stages::DeepGraspPose<moveit_task_constructor_msgs::SampleGraspPosesAction >>(
           action_name_, "generate DEEP grasp pose");
-        std::unique_ptr<stages::ComputeIK> wrapper = GenerateGraspWrapper(std::move(dg), hand_open_pose_, object, grasp_frame_transform_, hand_frame_, current_state_ptr);
+        stage->properties().configureInitFrom(Stage::PARENT);
+        stage->properties().set("marker_ns", "grasp_pose");
+        stage->setPreGraspPose(hand_open_pose_);
+        stage->setObject(object);
+        stage->setMonitoredStage(current_state_ptr);  // Hook into current state
+        // Compute IK
+        auto wrapper = std::make_unique<stages::ComputeIK>("grasp pose IK", std::move(stage));
+        wrapper->setMaxIKSolutions(8);
+        wrapper->setMinSolutionDistance(1.0);
+        wrapper->setIKFrame(grasp_frame_transform_, hand_frame_);
+        wrapper->properties().configureInitFrom(Stage::PARENT, { "eef", "group" });
+        wrapper->properties().configureInitFrom(Stage::INTERFACE, { "target_pose" });
         grasp->insert(std::move(wrapper));
       }
       else {
-        auto gg = std::make_unique< stages::GenerateGraspPose>("generate grasp pose");
+        auto stage = std::make_unique< stages::GenerateGraspPose>("generate grasp pose");
 
-        gg->setAngleDelta(4 * M_PI / 16);
-        std::unique_ptr<stages::ComputeIK> wrapper = GenerateGraspWrapper(std::move(gg), hand_open_pose_, object, grasp_frame_transform_, hand_frame_, current_state_ptr);
+        stage->setAngleDelta(4 * M_PI / 16);
+        std::unique_ptr<stages::ComputeIK> wrapper = GenerateGraspWrapper(std::move(stage), hand_open_pose_, object, grasp_frame_transform_, hand_frame_, current_state_ptr);
         grasp->insert(std::move(wrapper));
       }
       //   // stage.reset(std::reinterpret_cast<stages::GenerateGraspPose>(new stages::GenerateGraspPose));
