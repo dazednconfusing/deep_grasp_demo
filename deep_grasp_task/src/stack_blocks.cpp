@@ -144,7 +144,6 @@ int main(int argc, char** argv)
   // Construct and run task
 
   std::string prev_obj = "";
-  deep_grasp_task::DeepPickPlaceTask deep_pick_place_task("deep_pick_place_task", nh);
 
   deep_grasp_msgs::CylinderSegmentResultConstPtr result;
   if (cylinder_segment) {
@@ -196,16 +195,17 @@ int main(int argc, char** argv)
       cobj.primitive_poses.back().position.y,
       cobj.primitive_poses.back().position.z);
     spawnObject(psi, cobj);
+    ROS_INFO_NAMED(LOGNAME, "Waiting for octomap update");
+    ros::topic::waitForMessage<sensor_msgs::PointCloud2>("move_group/filtered_cloud");
+    ros::Duration(1.0).sleep();
+    ros::topic::waitForMessage<sensor_msgs::PointCloud2>("move_group/filtered_cloud");
+    ROS_INFO_NAMED(LOGNAME, "Finished waiting for octomap update");
     // sleep for half a second
+    deep_grasp_task::DeepPickPlaceTask deep_pick_place_task("deep_pick_place_task", nh);
     deep_pick_place_task.loadParameters(obj, prev_obj);
     prev_obj = obj;
 
     deep_pick_place_task.init();
-    ROS_INFO_NAMED(LOGNAME, "Waiting for octomap update");
-    ros::topic::waitForMessage<sensor_msgs::PointCloud2>("move_group/filtered_cloud");
-    ros::Duration(0.5).sleep();
-    ros::topic::waitForMessage<sensor_msgs::PointCloud2>("move_group/filtered_cloud");
-    ROS_INFO_NAMED(LOGNAME, "Finished waiting for octomap update");
 
     if (deep_pick_place_task.plan())
     {
