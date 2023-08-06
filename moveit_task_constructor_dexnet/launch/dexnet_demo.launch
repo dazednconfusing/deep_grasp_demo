@@ -1,5 +1,6 @@
 <?xml version="1.0"?>
 <launch>
+  
   <arg name="load_images" default="true" doc="load images from file"/>
   <arg name="object" default="cylinder" />
   <arg name="action_name" value="generate_grasps" doc="action name space"/>
@@ -22,10 +23,11 @@
 
   <!-- Run MTC pick and place -->
   <node name="mtc_tutorial" pkg="deep_grasp_task" type="deep_grasp_demo" output="screen">
+      <param name="deep_grasps" value="true"/>
       <param name="execute" value="true" />
       <param name="action_name" value="$(arg action_name)"/>
-      <rosparam command="load" file="$(find deep_grasp_task)/config/loco_config.yaml" />
-       <rosparam command="load" file="$(find deep_grasp_task)/config/$(arg object).yaml"/>
+      <!-- <rosparam command="load" file="$(find deep_grasp_task)/config/loco_config.yaml" /> -->
+       <rosparam command="load" file="$(find deep_grasp_task)/config/$(arg object)_config.yaml"/>
   </node>
 
   <!-- Grasp detection using GQCNN and Dex-Net data sets -->

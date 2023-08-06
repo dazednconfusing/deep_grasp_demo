@@ -35,13 +35,13 @@
      <node name="spawn_gazebo_table" pkg="gazebo_ros" type="spawn_model" args="-urdf -param table_description -model table" respawn="false" output="screen" />
      <!-- spawn object -->
      <!-- <param name="bowl1" textfile="/home/sebastian/.gazebo/models/red_bowl/model.sdf" /> -->
-     <node name="spawn_bow1" pkg="gazebo_ros" type="spawn_model" args="-file '/home/sebastian/.gazebo/models/red_bowl/model.sdf' -sdf -model bowl1 $(arg bowl1_args)" respawn="false" output="screen" />
-     <node name="spawn_bowl2" pkg="gazebo_ros" type="spawn_model" args="-file '/home/sebastian/.gazebo/models/green_bowl/model.sdf' -sdf -model bowl2 $(arg bowl2_args)" respawn="false" output="screen" />
-     <node name="spawn_mustard" pkg="gazebo_ros" type="spawn_model" args="-file '/home/sebastian/.gazebo/models/mustard_bottle/model.sdf' -sdf -model mustard $(arg mustard_args)" respawn="false" output="screen" />
-     <node name="spawn_bowl3" pkg="gazebo_ros" type="spawn_model" args="-file '/home/sebastian/.gazebo/models/serving_bowl/model.sdf' -sdf -model bowl3 $(arg bowl3_args)" respawn="false" output="screen" />
+     <node name="spawn_bow1" pkg="gazebo_ros" type="spawn_model" args="-file '/home/sebastianperalta/.gazebo/models/red_bowl/model.sdf' -sdf -model bowl1 $(arg bowl1_args)" respawn="false" output="screen" />
+     <node name="spawn_bowl2" pkg="gazebo_ros" type="spawn_model" args="-file '/home/sebastianperalta/.gazebo/models/green_bowl/model.sdf' -sdf -model bowl2 $(arg bowl2_args)" respawn="false" output="screen" />
+     <node name="spawn_mustard" pkg="gazebo_ros" type="spawn_model" args="-file '/home/sebastianperalta/.gazebo/models/mustard_bottle/model.sdf' -sdf -model mustard $(arg mustard_args)" respawn="false" output="screen" />
+     <node name="spawn_bowl3" pkg="gazebo_ros" type="spawn_model" args="-file '/home/sebastianperalta/.gazebo/models/serving_bowl/model.sdf' -sdf -model bowl3 $(arg bowl3_args)" respawn="false" output="screen" />
 
-     <node name="spawn_spoon1" pkg="gazebo_ros" type="spawn_model" args="-file '/home/sebastian/.gazebo/models/big_spoon/model.sdf' -sdf -model spoon1 $(arg spoon1_args)" respawn="false" output="screen" />
-     <node name="spawn_spoon2" pkg="gazebo_ros" type="spawn_model" args="-file '/home/sebastian/.gazebo/models/big_spoon/model.sdf' -sdf -model spoon2 $(arg spoon2_args)" respawn="false" output="screen" />
+     <node name="spawn_spoon1" pkg="gazebo_ros" type="spawn_model" args="-file '/home/sebastianperalta/.gazebo/models/big_spoon/model.sdf' -sdf -model spoon1 $(arg spoon1_args)" respawn="false" output="screen" />
+     <node name="spawn_spoon2" pkg="gazebo_ros" type="spawn_model" args="-file '/home/sebastianperalta/.gazebo/models/big_spoon/model.sdf' -sdf -model spoon2 $(arg spoon2_args)" respawn="false" output="screen" />
      <!-- strawberry -->
      <!-- <param name="object_description" command="$(find xacro)/xacro '$(find deep_grasp_task)/urdf/objects/strawberry.urdf.xacro'"/>
   <node name="spawn_gazebo_object" pkg="gazebo_ros" type="spawn_model" args="-urdf -param object_description -model strawberry -x 0.5 -y 0.0 -z 0.0" respawn="false" output="screen" /> -->

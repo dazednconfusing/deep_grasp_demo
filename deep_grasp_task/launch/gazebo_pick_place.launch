@@ -3,7 +3,7 @@
  <arg name="object" default="cylinder" />
   <arg name="z" if="$(eval arg('object') == 'cylinder')" value="0.175"/>
    <arg name="z" if="$(eval arg('object') == 'barclamp')" value="0.12"/>
-<arg name="object_args" default="object -x 0.5 -y -0.15 -z $(arg z)"/>
+<arg name="object_args" default="object -x 0.5 -y -0 -z $(arg z)"/>
 <arg name="table_args" default="x:=0.5 y:=0 z:=0.05 l:=0.5 w:=0.7 h:=0.1"/>
 
  <arg name="use_gazebo" default="true" />

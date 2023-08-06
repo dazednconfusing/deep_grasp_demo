@@ -34,7 +34,7 @@ image_size = 60
 image_num_channels = 15
 
 # Path to directory that contains neural network parameters
-weights_file = /home/sebastian/simply_ws/src/simply_mono/gpd/models/lenet/15channels/params/
+weights_file = /home/sebastianperalta/simply_ws/src/simply_mono/gpd/models/lenet/15channels/params/
 
 # Preprocessing of point cloud
 #   voxelize: if the cloud gets voxelized/downsampled
@@ -62,7 +62,7 @@ workspace = 0.25 0.6 -0.5 0 0 0.3
 # camera_position = 0.15 0 0.04
 # camera_position = 0.084 0.017 0.522
 camera_position = 0 0 0.57
-sample_above_plane = 0
+sample_above_plane = 1
 tf_base_cam = 0.084 0.017 0.522 0 0.8 0
 tf_cam_opt = 0 0 0 -1.57 0 -1.57
 # Grasp candidate generation
@@ -71,11 +71,11 @@ tf_cam_opt = 0 0 0 -1.57 0 -1.57
 #   nn_radius: the radius for the neighborhood search
 #   num_orientations: the number of robot hand orientations to evaluate
 #   rotation_axes: the axes about which the point neighborhood gets rotated
-num_samples = 100
+num_samples = 1000
 num_threads = 4
 nn_radius = 0.005
-num_orientations = 12
-num_finger_placements = 8
+num_orientations = 16
+num_finger_placements = 20
 hand_axes = 2
 deepen_hand = 1
 # num_samples = 2000
@@ -114,7 +114,7 @@ workspace_grasps = 0.1 0.6 -0.5 0 0 0.5
 #   angle_thresh: angle in radians above which grasps are filtered
 filter_approach_direction = 1 #1
 direction = 0 0 -1
-thresh_rad = 0.175
+thresh_rad = 0.707
 # thresh_rad = 0.3535
 # thresh_rad = 0.707
 
@@ -124,7 +124,7 @@ min_inliers = 1
 
 # Grasp selection
 #   num_selected: number of selected grasps (sorted by score)
-num_selected = 10
+num_selected = 100
 
 # Visualization
 #   plot_normals: plot the surface normals
