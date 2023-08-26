@@ -18,6 +18,7 @@ find_package(catkin REQUIRED COMPONENTS
 	moveit_ros_planning_interface
 	moveit_task_constructor_core
 	moveit_task_constructor_msgs
+  moveit_visual_tools
   roscpp
   pcl_ros
   pcl_conversions
@@ -36,6 +37,7 @@ catkin_package(
  CATKIN_DEPENDS
 	moveit_task_constructor_msgs
   deep_grasp_msgs
+  moveit_visual_tools
  	roscpp
 )
 
@@ -50,46 +52,23 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
-# Declare a C++ executable
-add_executable(deep_grasp_demo
- 							 src/deep_grasp_demo.cpp
-							 src/deep_pick_place_task.cpp
-)
 
-# Declare a C++ executable
-add_executable(strawberry_demo
- 							 src/strawberry_demo.cpp
-							 src/strawberry_task.cpp
-)
+
 # Declare a C++ executable
 add_executable(salad_demo
  							 src/salad_demo.cpp
-							 src/salad_task.cpp
 )
 
-# Declare a C++ executable
-add_executable(stack_blocks
- 							 src/stack_blocks.cpp
-							 src/deep_pick_place_task.cpp
-)
 
 add_executable(cylinder_segment
  							 src/cylinder_segment.cpp
 )
 
-# Specify libraries to link a library or executable target against
-target_link_libraries(deep_grasp_demo
-                      ${catkin_LIBRARIES}
-)
-target_link_libraries(strawberry_demo
-                      ${catkin_LIBRARIES}
-)
-target_link_libraries(salad_demo
-                      ${catkin_LIBRARIES}
-)
-target_link_libraries(stack_blocks
-                      ${catkin_LIBRARIES}
-)
+# # Specify libraries to link a library or executable target against
+# target_link_libraries(salad_demo
+#                       ${catkin_LIBRARIES}
+# )
+
 target_link_libraries(cylinder_segment
                       ${catkin_LIBRARIES}
 )
@@ -101,7 +80,7 @@ target_link_libraries(cylinder_segment
 # Mark executables and/or libraries for installation
 install(
   TARGETS
-    deep_grasp_demo
+    salad_demo
   ARCHIVE DESTINATION
     ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION

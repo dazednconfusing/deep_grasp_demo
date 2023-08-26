@@ -13,7 +13,6 @@
   <build_depend>roscpp</build_depend>
   <build_depend>message_generation</build_depend>
 
-  <depend>actionlib</depend>
   <depend>eigen_conversions</depend>
   <depend>geometry_msgs</depend>
   <depend>moveit_task_constructor_msgs</depend>
