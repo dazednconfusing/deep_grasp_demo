@@ -71,11 +71,11 @@ tf_cam_opt = 0 0 0 -1.57 0 -1.57
 #   nn_radius: the radius for the neighborhood search
 #   num_orientations: the number of robot hand orientations to evaluate
 #   rotation_axes: the axes about which the point neighborhood gets rotated
-num_samples = 1000
+num_samples = 100
 num_threads = 4
 nn_radius = 0.005
-num_orientations = 16
-num_finger_placements = 20
+num_orientations = 8
+num_finger_placements = 10
 hand_axes = 2
 deepen_hand = 1
 # num_samples = 2000
@@ -124,7 +124,7 @@ min_inliers = 1
 
 # Grasp selection
 #   num_selected: number of selected grasps (sorted by score)
-num_selected = 100
+num_selected = 5
 
 # Visualization
 #   plot_normals: plot the surface normals

@@ -1,5 +1,5 @@
 # Total planning attempts
-max_solutions: 10
+max_solutions: 0
 
 # Planning group and link names
 arm_group_name: "interbotix_arm"
@@ -26,8 +26,8 @@ surface_link: "table"
 spawn_camera: false
 camera_name: "camera"
 camera_mesh_file: "package://deep_grasp_task/meshes/camera/kinect.dae"
-# camera_pose: [0.5, 0, 0.7, 0, 0, 0] # side
-camera_pose: [0.5, 0, 0.7, 0, 1.571, 1.571] # over head
+camera_pose: [0.5, 0, 0.7, 0, 0, 0] # side
+# camera_pose: [0.5, 0, 0.7, 0, 1.571, 1.571] # over head
 
 # Table model
 spawn_table: true # true
@@ -58,9 +58,9 @@ ladle1_place_pose:  [0.43, -0.15, 0.23, 0,1.571,0]
 
 spawn_ladle2: true
 ladle2_dimensions: [0.06, 0.02]
-ladle2_pose: [0.44, 0.13, 0.13, 0, 1.571, 0]
+ladle2_pose: [0.39, 0.118, 0.204, 0, 1.571, 0]
 ladle2_name: "ladle2"
-ladle2_grasp_pose:  [0.44, 0.13, 0.2, 0,1.571, 0]
+ladle2_grasp_pose:  [0.39, 0.118, 0.206, 0,1.571, 0]
 # ladle2_grasp_pose:  [0.44, 0.13, 0.2, 0,1.571, 0]
 ladle2_pre_pour_pose: [0.32, 0.18, 0.32, 1.571, 0,-1.571]
 # ladle2_pour_pose:  [0.32, 0.18, 0.32, 1.571, 0,-1.571]
@@ -68,11 +68,11 @@ ladle2_pour_pose: [0.32, 0.18, 0.32, 1.571, 0, 0]
 # ladle2_pre_pour_pose: [0.32, -0.18, 0.35, -1.571, 0,1.571]
 # ladle2_pour_pose: [0.32, -0.18, 0.35, -1.571, 0, 0]
 
-ladle2_place_pose: [0.44, 0.13, 0.2, 0, 1.571, 0]
+ladle2_place_pose: [0.44, 0.13, 0.15, 0, 1.571, 0]
 
 spawn_mustard: true
-mustard_pose: [0.54, 0.29, 0.05, 0, 0, 0]
-mustard_grasp_pose: [0.5, 0.29, 0.135, 0, 0, 0]
+mustard_pose: [0.3, 0.2, 0.05, 0, 0, 0]
+mustard_grasp_pose: [0.28, 0.2, 0.135, 0, 0, 0]
 mustard_place_pose: [0.4, 0.29, 0.155, 0, 0, 0]
 mustard_pre_pour_pose: [0.32, 0, 0.3, 0, 0, 0]
 mustard_pour_pose: [0.32, 0, 0.3, 3.14, 0, 0]

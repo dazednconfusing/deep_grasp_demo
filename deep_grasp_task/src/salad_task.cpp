@@ -216,8 +216,8 @@ SaladTask::createPick(const std::string object, const moveit::task_constructor::
       p.pose = collision_objects_[object].grasp_pose;
       stage->setPose(p);
 
-      // visual_tools_->publishAxis(p.pose);
-      // visual_tools_->trigger();
+      visual_tools_->publishAxis(p.pose);
+      visual_tools_->trigger();
 
       // Compute IK
       auto wrapper = std::make_unique<stages::ComputeIK>("grasp pose IK", std::move(stage));
@@ -578,7 +578,7 @@ void SaladTask::init()
   // TODO(henningkayser): verify this is a bug, fix if possible
   task_.reset();
   task_.reset(new moveit::task_constructor::Task());
-
+  task_->introspection().reset();
   Task& t = *task_;
   t.stages()->setName(task_name_);
   t.loadRobotModel();
@@ -601,7 +601,7 @@ void SaladTask::init()
   t.setProperty("ik_frame", hand_frame_);
 
   {  // Current State
-    auto stage = SaladTask::createCurrentState(sampling_planner);
+    std::unique_ptr<SerialContainer> stage = SaladTask::createCurrentState(sampling_planner);
     t.add(std::move(stage));
   }
   if (collision_objects_.find("ladle1") != collision_objects_.end())

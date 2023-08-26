@@ -12,7 +12,7 @@
     <arg name="path_to_gpd_config" value="$(find moveit_task_constructor_gpd)/config/gpd_config.yaml" doc="path to GPD config and gripper params file"/>
 
     <!-- Run MTC pick and place -->
-    <node name="mtc_tutorial" pkg="deep_grasp_task" type="salad_demo" output="screen" launch-prefix="$(arg launch_prefix)">
+    <node name="mtc_task" pkg="deep_grasp_task" type="salad_demo" output="screen" launch-prefix="$(arg launch_prefix)">
         <param name="execute" value="true" />
         <param name="action_name" value="$(arg action_name)"/>
         <rosparam command="load" file="$(find deep_grasp_task)/config/salad_config.yaml" />

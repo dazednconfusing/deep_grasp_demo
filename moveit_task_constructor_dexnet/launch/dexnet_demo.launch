@@ -18,7 +18,7 @@
   <!-- <arg if="$(arg load_images)" name="color_image_file" value="rgb_clamp.png" doc="color image file"/>
   <arg if="$(arg load_images)" name="depth_image_file" value="depth_clamp.png" doc="depth image file"/> -->
 
-  <arg unless="$(arg load_images)" name="color_img_topic" value="/camera/rgb/image_raw" doc="topic name for raw color image"/>
+  <arg unless="$(arg load_images)" name="color_img_topic" value="/camera/color/image_raw" doc="topic name for raw color image"/>
   <arg unless="$(arg load_images)" name="depth_img_topic" value="/camera/depth/image_raw" doc="topic name for raw depth image"/>
 
   <!-- Run MTC pick and place -->
