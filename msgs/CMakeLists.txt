@@ -5,7 +5,7 @@ set(MSG_DEPS
   actionlib_msgs
   geometry_msgs)
 find_package(catkin REQUIRED COMPONENTS message_generation ${MSG_DEPS})
-add_action_files(DIRECTORY action FILES CylinderSegment.action)
+add_action_files(DIRECTORY action FILES CylinderSegment.action SampleGraspPoses.action)
 generate_messages(DEPENDENCIES ${MSG_DEPS})
 
 catkin_package(

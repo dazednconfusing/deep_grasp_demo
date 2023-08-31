@@ -30,16 +30,16 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *********************************************************************/
 
-/* Author: Henning Kayser, Simon Goldstein, Boston Cleek
-   Desc:   A demo to show MoveIt Task Constructor using a deep learning based
-           grasp generator
-*/
+ /* Author: Henning Kayser, Simon Goldstein, Boston Cleek
+    Desc:   A demo to show MoveIt Task Constructor using a deep learning based
+            grasp generator
+ */
 
-// ROS
+ // ROS
 #include <ros/ros.h>
 
 // MTC demo implementation
-#include <deep_grasp_task/salad_task.h>
+#include <deep_grasp_task/deep_pick_place_task.h>
 
 #include <geometry_msgs/Pose.h>
 #include <moveit/planning_scene_interface/planning_scene_interface.h>
@@ -49,7 +49,10 @@
 #include <iostream>
 
 #include <geometric_shapes/shape_operations.h>
+#include <moveit_task_constructor_msgs/SampleGraspPosesAction.h>
 #include <actionlib/client/simple_action_client.h>
+#include <deep_grasp_msgs/CylinderSegmentAction.h>
+#include <sensor_msgs/PointCloud2.h>
 
 constexpr char LOGNAME[] = "deep_grasp_demo";
 
@@ -78,14 +81,14 @@ moveit_msgs::CollisionObject createTable()
   object.primitives.resize(1);
   object.primitives[0].type = shape_msgs::SolidPrimitive::BOX;
   object.primitives[0].dimensions = table_dimensions;
-  pose.position.z -= 0.5 * table_dimensions[2];  // align surface with world
+  pose.position.z += 0.5 * table_dimensions[2];  // align surface with world
   object.primitive_poses.push_back(pose);
   object.operation = moveit_msgs::CollisionObject::ADD;
 
   return object;
 }
 
-moveit_msgs::CollisionObject createCylinderObject(const std::string name)
+moveit_msgs::CollisionObject createObject(std::string name)
 {
   ros::NodeHandle pnh("~");
   std::string object_name, object_reference_frame;
@@ -102,82 +105,16 @@ moveit_msgs::CollisionObject createCylinderObject(const std::string name)
   object.id = object_name;
   object.header.frame_id = object_reference_frame;
   object.primitives.resize(1);
-  object.primitives[0].type = shape_msgs::SolidPrimitive::CYLINDER;
+  object.primitives[0].type = shape_msgs::SolidPrimitive::BOX;
   object.primitives[0].dimensions = object_dimensions;
-  pose.position.z += 0.5 * object_dimensions[0];
+  pose.position.z += 0.5 * object_dimensions[2];
   object.primitive_poses.push_back(pose);
   object.operation = moveit_msgs::CollisionObject::ADD;
 
   return object;
 }
 
-moveit_msgs::CollisionObject createCamera()
-{
-  ros::NodeHandle pnh("~");
-  std::string camera_name, camera_reference_frame, camera_mesh_file;
-  geometry_msgs::Pose pose;
-  std::size_t error = 0;
-  error += !rosparam_shortcuts::get(LOGNAME, pnh, "camera_name", camera_name);
-  error += !rosparam_shortcuts::get(LOGNAME, pnh, "camera_mesh_file", camera_mesh_file);
-  error += !rosparam_shortcuts::get(LOGNAME, pnh, "camera_reference_frame", camera_reference_frame);
-  error += !rosparam_shortcuts::get(LOGNAME, pnh, "camera_pose", pose);
-  rosparam_shortcuts::shutdownIfError(LOGNAME, error);
 
-  shapes::Mesh* obj_mesh = shapes::createMeshFromResource(camera_mesh_file);
-
-  shapes::ShapeMsg mesh_msg;
-  shapes::constructMsgFromShape(obj_mesh, mesh_msg);
-  shape_msgs::Mesh mesh = boost::get<shape_msgs::Mesh>(mesh_msg);
-
-  moveit_msgs::CollisionObject object;
-  object.id = camera_name;
-  object.header.frame_id = camera_reference_frame;
-  object.meshes.emplace_back(mesh);
-  object.mesh_poses.emplace_back(pose);
-  object.operation = moveit_msgs::CollisionObject::ADD;
-
-  return object;
-}
-
-moveit_msgs::CollisionObject createObjectMesh()
-{
-  ros::NodeHandle pnh("~");
-  std::string object_name, object_reference_frame, object_mesh_file;
-  std::vector<double> object_dimensions;
-  geometry_msgs::Pose pose;
-  std::size_t error = 0;
-  error += !rosparam_shortcuts::get(LOGNAME, pnh, "object_name", object_name);
-  error += !rosparam_shortcuts::get(LOGNAME, pnh, "object_mesh_file", object_mesh_file);
-  error += !rosparam_shortcuts::get(LOGNAME, pnh, "object_reference_frame", object_reference_frame);
-  error += !rosparam_shortcuts::get(LOGNAME, pnh, "object_dimensions", object_dimensions);
-  error += !rosparam_shortcuts::get(LOGNAME, pnh, "object_pose", pose);
-  rosparam_shortcuts::shutdownIfError(LOGNAME, error);
-
-  shapes::Mesh* obj_mesh = shapes::createMeshFromResource(object_mesh_file);
-
-  shapes::ShapeMsg mesh_msg;
-  shapes::constructMsgFromShape(obj_mesh, mesh_msg);
-  shape_msgs::Mesh mesh = boost::get<shape_msgs::Mesh>(mesh_msg);
-
-  moveit_msgs::CollisionObject object;
-  object.id = object_name;
-  object.header.frame_id = object_reference_frame;
-  object.meshes.emplace_back(mesh);
-  object.mesh_poses.emplace_back(pose);
-  object.operation = moveit_msgs::CollisionObject::ADD;
-
-  // moveit_msgs::CollisionObject object;
-  // object.id = object_name;
-  // object.header.frame_id = object_reference_frame;
-  // object.primitives.resize(1);
-  // object.primitives[0].type = shape_msgs::SolidPrimitive::BOX;
-  // object.primitives[0].dimensions = object_dimensions;
-  // pose.position.z += 0.5 * object_dimensions[0];
-  // object.primitive_poses.push_back(pose);
-  // object.operation = moveit_msgs::CollisionObject::ADD;
-
-  return object;
-}
 
 int main(int argc, char** argv)
 {
@@ -194,62 +131,109 @@ int main(int argc, char** argv)
   // Add table and object to planning scene
   moveit::planning_interface::PlanningSceneInterface psi;
   ros::NodeHandle pnh("~");
-  std::vector<std::string> collision_objects;
-  if (pnh.param("spawn_table", true))
+  if (pnh.param("spawn_table", false))
   {
     spawnObject(psi, createTable());
   }
-
-  // Add camera to planning scene
-  if (pnh.param("spawn_camera", true))
-  {
-    spawnObject(psi, createCamera());
-  }
-  // Add object to planning scene either as mesh or geometric primitive
-
-  if (pnh.param("spawn_ladle1", true))
-  {
-    spawnObject(psi, createCylinderObject("ladle1"));
-    collision_objects.push_back("ladle1");
-  }
-  if (pnh.param("spawn_ladle2", true))
-  {
-    spawnObject(psi, createCylinderObject("ladle2"));
-    collision_objects.push_back("ladle2");
-  }
-
-  // Add object to planning scene either as mesh or geometric primitive
-  if (pnh.param("spawn_mustard", true))
-  {
-    spawnObject(psi, createCylinderObject("mustard"));
-    collision_objects.push_back("mustard");
-  }
-
-  // Wait for ApplyPlanningScene service
-  ros::Duration(2.0).sleep();
-
+  std::vector<std::string> spawn_objs;
+  bool cylinder_segment;
+  std::size_t errors = 0;
+  errors += !rosparam_shortcuts::get(LOGNAME, pnh, "spawn_objs", spawn_objs);
+  errors += !rosparam_shortcuts::get(LOGNAME, pnh, "cylinder_segment", cylinder_segment);
+  rosparam_shortcuts::shutdownIfError(LOGNAME, errors);
   // Construct and run task
-  deep_grasp_task::SaladTask deep_pick_place_task("deep_pick_place_task", nh, collision_objects);
-  deep_pick_place_task.loadParameters();
-  deep_pick_place_task.init();
 
-  if (deep_pick_place_task.plan())
-  {
-    ROS_INFO_NAMED(LOGNAME, "Planning succeded");
-    if (pnh.param("execute", false))
+  std::string prev_obj = "";
+  deep_grasp_task::DeepPickPlaceTask deep_pick_place_task("deep_pick_place_task", nh);
+
+  deep_grasp_msgs::CylinderSegmentResultConstPtr result;
+  if (cylinder_segment) {
+    actionlib::SimpleActionClient<deep_grasp_msgs::CylinderSegmentAction> ac("cylinder_segment", true);
+
+
+    ROS_INFO("Waiting for cylinder segment action server to start.");
+    // wait for the action server to start
+    ac.waitForServer(); //will wait for infinite time
+    ROS_INFO("Cylinder segment started");
+    deep_grasp_msgs::CylinderSegmentGoal goal;
+    ac.sendGoal(goal);
+
+    //wait for the action to return
+    bool finished_before_timeout = ac.waitForResult(ros::Duration(180.0));
+
+    if (finished_before_timeout)
     {
-      deep_pick_place_task.execute();
-      ROS_INFO_NAMED(LOGNAME, "Execution complete");
+      actionlib::SimpleClientGoalState state = ac.getState();
+      ROS_INFO("Action finished: %s", state.toString().c_str());
+    }
+    else {
+      ROS_INFO("Action did not finish before the time out.");
+
+      //exit
+      return 0;
+    }
+    result = ac.getResult();
+    ROS_WARN_NAMED(LOGNAME, "X,Y %s RESULT: (%.2f, %.2f)", result->com.header.frame_id.c_str(), result->com.pose.position.x, result->com.pose.position.y);
+  }
+
+  for (std::string obj : spawn_objs) {
+    if (obj == "block2") {
+      prev_obj = "block3";
+    }
+    if (obj == "block1") {
+      prev_obj = "block2";
+    }
+
+
+    moveit_msgs::CollisionObject cobj = createObject(obj);
+    if (cylinder_segment) {
+      cobj.primitive_poses.back().position.x = result->com.pose.position.x;
+      cobj.primitive_poses.back().position.y = result->com.pose.position.y;
+    }
+    ROS_WARN_NAMED(LOGNAME, " COBJ %s RESULT: (%.2f, %.2f, %.2f)",
+      cobj.header.frame_id.c_str(),
+      cobj.primitive_poses.back().position.x,
+      cobj.primitive_poses.back().position.y,
+      cobj.primitive_poses.back().position.z);
+    spawnObject(psi, cobj);
+    // sleep for half a second
+    deep_pick_place_task.loadParameters(obj, prev_obj);
+    prev_obj = obj;
+
+    deep_pick_place_task.init();
+    ROS_INFO_NAMED(LOGNAME, "Waiting for octomap update");
+    ros::topic::waitForMessage<sensor_msgs::PointCloud2>("move_group/filtered_cloud");
+    ros::Duration(0.5).sleep();
+    ros::topic::waitForMessage<sensor_msgs::PointCloud2>("move_group/filtered_cloud");
+    ROS_INFO_NAMED(LOGNAME, "Finished waiting for octomap update");
+
+    if (deep_pick_place_task.plan())
+    {
+      ROS_INFO_NAMED(LOGNAME, "Planning succeded");
+      if (pnh.param("execute", false))
+      {
+        if (deep_pick_place_task.execute()) {
+        ROS_INFO_NAMED(LOGNAME, "Execution complete");
+        }
+        else {
+          ROS_INFO_NAMED(LOGNAME, "Execution failed");
+          break;
+        }
+      }
+      else
+      {
+        ROS_INFO_NAMED(LOGNAME, "Execution disabled");
+      }
     }
     else
     {
-      ROS_INFO_NAMED(LOGNAME, "Execution disabled");
+      ROS_INFO_NAMED(LOGNAME, "Planning failed");
+      break;
     }
+
+
   }
-  else
-  {
-    ROS_INFO_NAMED(LOGNAME, "Planning failed");
-  }
+
 
   // Keep introspection alive
   ros::waitForShutdown();

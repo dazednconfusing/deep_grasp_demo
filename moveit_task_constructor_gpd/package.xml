@@ -15,7 +15,7 @@
 
   <depend>eigen_conversions</depend>
   <depend>geometry_msgs</depend>
-  <depend>moveit_task_constructor_msgs</depend>
+  <depend>deep_grasp_msgs</depend>
   <depend>rosparam_shortcuts</depend>
   <depend>sensor_msgs</depend>
   <depend>std_msgs</depend>

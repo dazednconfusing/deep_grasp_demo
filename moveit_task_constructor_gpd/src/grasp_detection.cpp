@@ -83,7 +83,7 @@ void GraspDetection::loadParameters()
 void GraspDetection::init()
 {
   // action server
-  server_.reset(new actionlib::SimpleActionServer<moveit_task_constructor_msgs::SampleGraspPosesAction>(
+  server_.reset(new actionlib::SimpleActionServer<deep_grasp_msgs::SampleGraspPosesAction>(
       nh_, action_name_, false));
   server_->registerGoalCallback(std::bind(&GraspDetection::goalCallback, this));
   server_->registerPreemptCallback(std::bind(&GraspDetection::preemptCallback, this));

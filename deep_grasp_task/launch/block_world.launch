@@ -48,7 +48,7 @@
      <!-- Run rviz with prepared config -->
      <include file="$(find interbotix_xslocobot_moveit)/launch/moveit_rviz.launch">
           <!-- <include ns="locobot" file="$(find interbotix_xslocobot_moveit)/launch/moveit_rviz.launch"> -->
-          <arg name="rviz_config" value="$(find moveit_task_constructor_demo)/config/$(arg rviz_config)" />
+          <arg name="rviz_config" value="$(find deep_grasp_task)/config/$(arg rviz_config)" />
      </include>
 
 </launch>

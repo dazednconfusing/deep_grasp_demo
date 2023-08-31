@@ -16,7 +16,7 @@ find_package(catkin REQUIRED COMPONENTS
 	eigen_conversions
 	geometry_msgs
 	message_generation
-	moveit_task_constructor_msgs
+	deep_grasp_msgs
 	roscpp
 	rosparam_shortcuts
 	sensor_msgs
@@ -63,7 +63,7 @@ catkin_package(
 	  eigen_conversions
 		geometry_msgs
 		message_runtime
-		moveit_task_constructor_msgs
+		deep_grasp_msgs
 		sensor_msgs
 		std_msgs
  	DEPENDS

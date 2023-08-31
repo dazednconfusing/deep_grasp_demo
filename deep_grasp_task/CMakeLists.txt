@@ -57,6 +57,13 @@ include_directories(
 # Declare a C++ executable
 add_executable(salad_demo
  							 src/salad_demo.cpp
+               src/salad_task.cpp
+)
+
+# Declare a C++ executable
+add_executable(stack_blocks
+        src/stack_blocks.cpp
+        src/deep_pick_place_task.cpp
 )
 
 
@@ -65,9 +72,12 @@ add_executable(cylinder_segment
 )
 
 # # Specify libraries to link a library or executable target against
-# target_link_libraries(salad_demo
-#                       ${catkin_LIBRARIES}
-# )
+target_link_libraries(salad_demo
+                      ${catkin_LIBRARIES}
+)
+target_link_libraries(stack_blocks
+                      ${catkin_LIBRARIES}
+)
 
 target_link_libraries(cylinder_segment
                       ${catkin_LIBRARIES}

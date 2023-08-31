@@ -9,7 +9,7 @@
     <arg name="action_name" value="generate_grasps" doc="action name space"/>
     <arg name="frame_id" value="world" doc="frame of the grasps sent to MTC"/>
     <arg name="point_cloud_topic" value="/camera/depth/color/points" doc="point cloud topic name"/>
-    <arg name="path_to_gpd_config" value="$(find moveit_task_constructor_gpd)/config/gpd_config.yaml" doc="path to GPD config and gripper params file"/>
+    <!-- <arg name="path_to_gpd_config" value="$(find moveit_task_constructor_gpd)/config/gpd_config.yaml" doc="path to GPD config and gripper params file"/> -->
 
     <!-- Run MTC pick and place -->
     <node name="mtc_task" pkg="deep_grasp_task" type="salad_demo" output="screen" launch-prefix="$(arg launch_prefix)">
