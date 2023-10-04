@@ -1,15 +1,21 @@
-cmake_minimum_required(VERSION 3.1.3)
+cmake_minimum_required(VERSION 3.5)
 project(deep_grasp_msgs)
-set(MSG_DEPS
-  std_msgs
-  actionlib_msgs
-  geometry_msgs)
-find_package(catkin REQUIRED COMPONENTS message_generation ${MSG_DEPS})
-add_action_files(DIRECTORY action FILES CylinderSegment.action SampleGraspPoses.action)
-generate_messages(DEPENDENCIES ${MSG_DEPS})
+find_package(ament_cmake REQUIRED)
+find_package(builtin_interfaces REQUIRED)
+find_package(rosidl_default_generators REQUIRED)
+find_package(geometry_msgs REQUIRED)
 
-catkin_package(
-	CATKIN_DEPENDS
-		message_runtime
-		${MSG_DEPS}
+set(action_files
+"action/CylinderSegment.action" "action/SampleGraspPoses.action"
 )
+
+rosidl_generate_interfaces(${PROJECT_NAME}
+	${action_files}
+	DEPENDENCIES
+  builtin_interfaces geometry_msgs
+)
+
+ament_export_dependencies(rosidl_default_runtime)
+
+ament_package()
+

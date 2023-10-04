@@ -62,7 +62,7 @@
 #include <moveit/task_constructor/stages/predicate_filter.h>
 #include <moveit/task_constructor/solvers/cartesian_path.h>
 #include <moveit/task_constructor/solvers/pipeline_planner.h>
-#include <moveit_task_constructor_msgs/ExecuteTaskSolutionAction.h>
+#include <moveit_task_constructor_msgs/msg/ExecuteTaskSolutionAction.h>
 #include <moveit_visual_tools/moveit_visual_tools.h>
 
 namespace deep_grasp_task

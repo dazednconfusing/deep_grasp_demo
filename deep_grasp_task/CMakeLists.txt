@@ -1,124 +1,127 @@
-# C++ 20
-add_compile_options(-std=c++14)
-cmake_minimum_required(VERSION 3.0.2)
+cmake_minimum_required(VERSION 3.5)
 project(deep_grasp_task)
 
+if(NOT CMAKE_C_STANDARD)
+  set(CMAKE_C_STANDARD 99)
+endif()
 
+if(NOT CMAKE_CXX_STANDARD)
+  set(CMAKE_CXX_STANDARD 17)
+endif()
 
-# Warnings
-add_definitions(-W -Wall -Wextra
-  -Wwrite-strings -Wunreachable-code -Wpointer-arith
-  -Winit-self -Wredundant-decls
-  -Wno-unused-parameter -Wno-unused-function)
+if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  add_compile_options(-Wall -Wextra -Wpedantic -march=native)
+endif()
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
 
-# Find catkin macros and libraries
-find_package(catkin REQUIRED COMPONENTS
-	actionlib
-	moveit_core
-	moveit_ros_planning_interface
-	moveit_task_constructor_core
-	moveit_task_constructor_msgs
-  moveit_visual_tools
-  roscpp
-  pcl_ros
-  pcl_conversions
-  tf2_ros
-  tf2
-  tf2_geometry_msgs
-	rosparam_shortcuts
-  deep_grasp_msgs
-)
+find_package(ament_cmake REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(moveit_task_constructor_core REQUIRED)
+find_package(moveit_visual_tools REQUIRED)
+find_package(pcl_ros REQUIRED)
+find_package(pcl_conversions REQUIRED)
+find_package(tf2_ros REQUIRED)
+find_package(tf2_eigen REQUIRED)
+find_package(Eigen3 REQUIRED)
+find_package(tf2_geometry_msgs REQUIRED)
+find_package(deep_grasp_msgs REQUIRED)
 
-###################################
-## Catkin specific configuration ##
-###################################
-catkin_package(
- INCLUDE_DIRS include
- CATKIN_DEPENDS
-	moveit_task_constructor_msgs
-  deep_grasp_msgs
-  moveit_visual_tools
- 	roscpp
-)
+# ##################################
+# # Catkin specific configuration ##
+# ##################################
 
-###########
-## Build ##
-###########
+# ##########
+# # Build ##
+# ##########
 
 # Specify additional locations of header files
-# Your package locations should be listed before other locations
-include_directories(
-  include
-  ${catkin_INCLUDE_DIRS}
-)
-
-
-
-# Declare a C++ executable
-add_executable(salad_demo
- 							 src/salad_demo.cpp
-               src/salad_task.cpp
-)
-
-# Declare a C++ executable
+include_directories(include)
 add_executable(stack_blocks
-        src/stack_blocks.cpp
-        src/deep_pick_place_task.cpp
+  src/stack_blocks.cpp
 )
-
 
 add_executable(cylinder_segment
- 							 src/cylinder_segment.cpp
+  src/cylinder_segment.cpp
 )
+
+add_library(deep_grasp_task SHARED
+  src/deep_pick_place_task.cpp
+)
+
+add_library(action_client SHARED
+  src/stages/deep_grasp_pose.cpp)
+
+ament_target_dependencies(action_client
+  moveit_task_constructor_core moveit_visual_tools rclcpp deep_grasp_msgs
+)
+
+ament_target_dependencies(deep_grasp_task
+  moveit_task_constructor_core moveit_visual_tools rclcpp deep_grasp_msgs EIGEN3
+)
+target_link_libraries(deep_grasp_task action_client)
+
+ament_target_dependencies(stack_blocks
+  rclcpp
+  moveit_task_constructor_core moveit_visual_tools deep_grasp_msgs EIGEN3)
+
+target_link_libraries(stack_blocks deep_grasp_task action_client)
+
+ament_target_dependencies(cylinder_segment
+  rclcpp moveit_task_constructor_core
+  deep_grasp_msgs pcl_ros pcl_conversions tf2_ros tf2_geometry_msgs)
+
+# Your package locations should be listed before other locations
+
+# Declare a C++ executable
+# add_executable(salad_demo
+# src/salad_demo.cpp
+# src/salad_task.cpp
+# )
+
+# Declare a C++ executable
 
 # # Specify libraries to link a library or executable target against
-target_link_libraries(salad_demo
-                      ${catkin_LIBRARIES}
-)
-target_link_libraries(stack_blocks
-                      ${catkin_LIBRARIES}
-)
 
-target_link_libraries(cylinder_segment
-                      ${catkin_LIBRARIES}
-)
-
-#############
-## Install ##
-#############
+# ############
+# # Install ##
+# ############
 
 # Mark executables and/or libraries for installation
 install(
   TARGETS
-    salad_demo
-  ARCHIVE DESTINATION
-    ${CATKIN_PACKAGE_LIB_DESTINATION}
-  LIBRARY DESTINATION
-    ${CATKIN_PACKAGE_LIB_DESTINATION}
-  RUNTIME DESTINATION
-    ${CATKIN_PACKAGE_BIN_DESTINATION}
+  stack_blocks
+  cylinder_segment
+  deep_grasp_task
+  action_client
+  RUNTIME DESTINATION lib/${PROJECT_NAME}
+  LIBRARY DESTINATION share/${PROJECT_NAME}
 )
 
-# Mark cpp header files for installation
-install(
-  DIRECTORY
-    include/${PROJECT_NAME}/
-  DESTINATION
-    ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+# install(
+# TARGETS
+# stack_blocks
+# cylinder_segment
+# deep_grasp_task
+# action_client
+# EXPORT export_${PROJECT_NAME}
+# LIBRARY DESTINATION share/${PROJECT_NAME}
+# RUNTIME DESTINATION lib/${PROJECT_NAME}
+# )
+
+# ament_export_targets(export_${PROJECT_NAME} HAS_LIBRARY_TARGET)
+
+# Install launch files
+install(DIRECTORY
+  launch
+  urdf
+  worlds
+  config
+  DESTINATION share/${PROJECT_NAME}
 )
 
-# # Mark roslaunch files for installation
-# install(
-#   DIRECTORY
-#     launch
-#   DESTINATION
-#     ${CATKIN_PACKAGE_SHARE_DESTINATION}
-# )
-#
-# # Mark config files for installation
-# install(
-#   DIRECTORY
-#     config
-#   DESTINATION
-#     ${CATKIN_PACKAGE_SHARE_DESTINATION}
-# )
+if(BUILD_TESTING)
+  find_package(ament_lint_auto REQUIRED)
+  ament_lint_auto_find_test_dependencies()
+endif()
+
+ament_package()

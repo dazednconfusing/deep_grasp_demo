@@ -30,212 +30,252 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *********************************************************************/
 
- /* Author: Henning Kayser, Simon Goldstein, Boston Cleek
-    Desc:   A demo to show MoveIt Task Constructor using a deep learning based
-            grasp generator
- */
+/* Author: Henning Kayser, Simon Goldstein, Boston Cleek
+   Desc:   A demo to show MoveIt Task Constructor using a deep learning based
+           grasp generator
+*/
 
- // ROS
-#include <ros/ros.h>
+// ROS
+#include <rclcpp/rclcpp.hpp>
 
 // MTC demo implementation
 #include <deep_grasp_task/deep_pick_place_task.h>
 
-#include <geometry_msgs/Pose.h>
+#include <geometry_msgs/msg/pose.hpp>
 #include <moveit/planning_scene_interface/planning_scene_interface.h>
-#include <rosparam_shortcuts/rosparam_shortcuts.h>
-#include <tf2_ros/transform_broadcaster.h>
 
 #include <iostream>
 
 #include <geometric_shapes/shape_operations.h>
-#include <moveit_task_constructor_msgs/SampleGraspPosesAction.h>
-#include <actionlib/client/simple_action_client.h>
-#include <deep_grasp_msgs/CylinderSegmentAction.h>
-#include <sensor_msgs/PointCloud2.h>
+#include <sensor_msgs/msg/point_cloud2.hpp>
+#include <deep_grasp_msgs/action/cylinder_segment.hpp>
+#include "rclcpp_action/rclcpp_action.hpp"
+#include "tf2_eigen/tf2_eigen.hpp"
+#include <eigen3/Eigen/Eigen>
 
-constexpr char LOGNAME[] = "deep_grasp_demo";
+geometry_msgs::msg::Pose poseFromXYZRPY(std::vector<double> pose)
+{
+  geometry_msgs::msg::Pose p;
+  p.position.x = pose[0];
+  p.position.y = pose[1];
+  p.position.z = pose[2];
+  Eigen::Quaterniond q = Eigen::AngleAxisd(pose[3], Eigen::Vector3d::UnitX()) *
+                         Eigen::AngleAxisd(pose[4], Eigen::Vector3d::UnitY()) *
+                         Eigen::AngleAxisd(pose[5], Eigen::Vector3d::UnitZ());
+  p.orientation.x = q.x();
+  p.orientation.y = q.y();
+  p.orientation.z = q.z();
+  p.orientation.w = q.w();
+  return p;
+}
 
-void spawnObject(moveit::planning_interface::PlanningSceneInterface& psi, const moveit_msgs::CollisionObject& object)
+void spawnObject(moveit::planning_interface::PlanningSceneInterface& psi,
+                 const moveit_msgs::msg::CollisionObject& object)
 {
   if (!psi.applyCollisionObject(object))
     throw std::runtime_error("Failed to spawn object: " + object.id);
 }
 
-moveit_msgs::CollisionObject createTable()
+moveit_msgs::msg::CollisionObject createTable(rclcpp::Node::SharedPtr node)
 {
-  ros::NodeHandle pnh("~");
   std::string table_name, table_reference_frame;
   std::vector<double> table_dimensions;
-  geometry_msgs::Pose pose;
-  std::size_t errors = 0;
-  errors += !rosparam_shortcuts::get(LOGNAME, pnh, "table_name", table_name);
-  errors += !rosparam_shortcuts::get(LOGNAME, pnh, "table_reference_frame", table_reference_frame);
-  errors += !rosparam_shortcuts::get(LOGNAME, pnh, "table_dimensions", table_dimensions);
-  errors += !rosparam_shortcuts::get(LOGNAME, pnh, "table_pose", pose);
-  rosparam_shortcuts::shutdownIfError(LOGNAME, errors);
+  std::vector<double> pose;
+  node->get_parameter("table_name", table_name);
+  node->get_parameter("table_reference_frame", table_reference_frame);
+  node->get_parameter("table_dimensions", table_dimensions);
+  node->get_parameter("table_pose", pose);
 
-  moveit_msgs::CollisionObject object;
+  moveit_msgs::msg::CollisionObject object;
   object.id = table_name;
   object.header.frame_id = table_reference_frame;
   object.primitives.resize(1);
-  object.primitives[0].type = shape_msgs::SolidPrimitive::BOX;
-  object.primitives[0].dimensions = table_dimensions;
-  pose.position.z += 0.5 * table_dimensions[2];  // align surface with world
-  object.primitive_poses.push_back(pose);
-  object.operation = moveit_msgs::CollisionObject::ADD;
+  object.primitives[0].type = shape_msgs::msg::SolidPrimitive::BOX;
+  object.primitives[0].dimensions = { table_dimensions[0], table_dimensions[1],
+                                      table_dimensions[2] };  // align surface with world
+
+  object.primitive_poses.push_back(poseFromXYZRPY(pose));
+  object.operation = moveit_msgs::msg::CollisionObject::ADD;
 
   return object;
 }
 
-moveit_msgs::CollisionObject createObject(std::string name)
+moveit_msgs::msg::CollisionObject createObject(rclcpp::Node::SharedPtr node, std::string name)
 {
-  ros::NodeHandle pnh("~");
   std::string object_name, object_reference_frame;
   std::vector<double> object_dimensions;
-  geometry_msgs::Pose pose;
-  std::size_t error = 0;
-  error += !rosparam_shortcuts::get(LOGNAME, pnh, name + "_name", object_name);
-  error += !rosparam_shortcuts::get(LOGNAME, pnh, "object_reference_frame", object_reference_frame);
-  error += !rosparam_shortcuts::get(LOGNAME, pnh, name + "_dimensions", object_dimensions);
-  error += !rosparam_shortcuts::get(LOGNAME, pnh, name + "_pose", pose);
-  rosparam_shortcuts::shutdownIfError(LOGNAME, error);
+  std::vector<double> pose;
+  node->get_parameter(name + "_name", object_name);
+  node->get_parameter("object_reference_frame", object_reference_frame);
+  node->get_parameter(name + "_dimensions", object_dimensions);
+  node->get_parameter(name + "_pose", pose);
 
-  moveit_msgs::CollisionObject object;
+  moveit_msgs::msg::CollisionObject object;
   object.id = object_name;
   object.header.frame_id = object_reference_frame;
   object.primitives.resize(1);
-  object.primitives[0].type = shape_msgs::SolidPrimitive::BOX;
-  object.primitives[0].dimensions = object_dimensions;
-  pose.position.z += 0.5 * object_dimensions[2];
-  object.primitive_poses.push_back(pose);
-  object.operation = moveit_msgs::CollisionObject::ADD;
+  object.primitives[0].type = shape_msgs::msg::SolidPrimitive::BOX;
+  object.primitives[0].dimensions = { object_dimensions[0], object_dimensions[1], object_dimensions[2] };
+  object.primitive_poses.push_back(poseFromXYZRPY(pose));
+  object.operation = moveit_msgs::msg::CollisionObject::ADD;
 
   return object;
 }
 
-
-
+std::string getVersion() {
+  if (__cplusplus == 202101L) return "C++23";
+    else if (__cplusplus == 202002L) return "C++20";
+    else if (__cplusplus == 201703L) return "C++17";
+    else if (__cplusplus == 201402L) return "C++14";
+    else if (__cplusplus == 201103L) return "C++11";
+    else if (__cplusplus == 199711L) return "C++98";
+    else return "pre-standard C++.";
+}
 int main(int argc, char** argv)
 {
-  ROS_INFO_NAMED(LOGNAME, "Init deep_grasp_demo");
-  ros::init(argc, argv, "deep_grasp_demo");
-  ros::NodeHandle nh;
+  rclcpp::init(argc, argv);
+  rclcpp::NodeOptions node_options;
+  node_options.automatically_declare_parameters_from_overrides(true);
+  node_options.allow_undeclared_parameters(true);
+  auto node = rclcpp::Node::make_shared("deep_pick_place_task", node_options);
+  std::thread spinning_thread([node] { rclcpp::spin(node); });
+  RCLCPP_INFO(node->get_logger(), "Init deep_grasp_demo.");
+  RCLCPP_INFO_STREAM(node->get_logger(), "C++ version"  << getVersion().c_str());
+  auto parameter_fetcher = rclcpp::Node::make_shared("parameter_fetcher", node_options);
+  auto parameters_client = std::make_shared<rclcpp::SyncParametersClient>(parameter_fetcher, "move_group");
+  while (!parameters_client->wait_for_service(std::chrono::seconds(1)))
+  {
+    if (!rclcpp::ok())
+    {
+      rclcpp::shutdown();
+    }
+    RCLCPP_INFO_ONCE(node->get_logger(), "service not available, waiting again...");
+  }
+  RCLCPP_INFO(node->get_logger(), "Setting parameters");
+  auto list_result =
+      parameters_client->list_parameters({ "move_group", "robot_description_planning", "interbotix_gripper",
+                                           "interbotix_arm", "", "moveit_simple_controller_managers" },
+                                         0);
+  auto all_params = parameters_client->get_parameters(list_result.names);
+  node->set_parameters(all_params);
 
-  ros::AsyncSpinner spinner(1);
-  spinner.start();
-
+  auto parameters = parameters_client->get_parameters({"robot_description_semantic"});
+  node->set_parameters(parameters);
   // Wait for ApplyPlanningScene service
-  ros::Duration(1.0).sleep();
+  rclcpp::sleep_for(std::chrono::seconds(1));
 
   // Add table and object to planning scene
   moveit::planning_interface::PlanningSceneInterface psi;
-  ros::NodeHandle pnh("~");
-  if (pnh.param("spawn_table", false))
+
+  if (node->get_parameter_or("spawn_table", false))
   {
-    spawnObject(psi, createTable());
+    spawnObject(psi, createTable(node));
   }
   std::vector<std::string> spawn_objs;
   bool cylinder_segment;
-  std::size_t errors = 0;
-  errors += !rosparam_shortcuts::get(LOGNAME, pnh, "spawn_objs", spawn_objs);
-  errors += !rosparam_shortcuts::get(LOGNAME, pnh, "cylinder_segment", cylinder_segment);
-  rosparam_shortcuts::shutdownIfError(LOGNAME, errors);
+  node->get_parameter("spawn_objs", spawn_objs);
+  node->get_parameter("cylinder_segment", cylinder_segment);
   // Construct and run task
 
   std::string prev_obj = "";
-  deep_grasp_task::DeepPickPlaceTask deep_pick_place_task("deep_pick_place_task", nh);
+  deep_grasp_task::DeepPickPlaceTask deep_pick_place_task("deep_pick_place_task", node);
+  deep_grasp_msgs::action::CylinderSegment_Result result;
+  if (cylinder_segment)
+  {
+    auto ac = rclcpp_action::create_client<deep_grasp_msgs::action::CylinderSegment>(node, "cylinder_segment");
 
-  deep_grasp_msgs::CylinderSegmentResultConstPtr result;
-  if (cylinder_segment) {
-    actionlib::SimpleActionClient<deep_grasp_msgs::CylinderSegmentAction> ac("cylinder_segment", true);
-
-
-    ROS_INFO("Waiting for cylinder segment action server to start.");
+    RCLCPP_INFO(node->get_logger(), "Waiting for cylinder segment action server to start.");
     // wait for the action server to start
-    ac.waitForServer(); //will wait for infinite time
-    ROS_INFO("Cylinder segment started");
-    deep_grasp_msgs::CylinderSegmentGoal goal;
-    ac.sendGoal(goal);
+    ac->wait_for_action_server();  // will wait for infinite time
+    RCLCPP_INFO(node->get_logger(), "Cylinder segment started");
+    deep_grasp_msgs::action::CylinderSegment_Goal goal;
+    auto send_goal_options = rclcpp_action::Client<deep_grasp_msgs::action::CylinderSegment>::SendGoalOptions();
+    send_goal_options.result_callback =
+        [&](const rclcpp_action::ClientGoalHandle<deep_grasp_msgs::action::CylinderSegment>::WrappedResult&
+                wrapped_result) { result = *wrapped_result.result; };
+    ac->async_send_goal(goal, send_goal_options);
 
-    //wait for the action to return
-    bool finished_before_timeout = ac.waitForResult(ros::Duration(180.0));
+    // wait for the action to return
+    //  bool finished_before_timeout = ac.waitForResult(rclcpp::Duration(180.0));
 
-    if (finished_before_timeout)
-    {
-      actionlib::SimpleClientGoalState state = ac.getState();
-      ROS_INFO("Action finished: %s", state.toString().c_str());
-    }
-    else {
-      ROS_INFO("Action did not finish before the time out.");
+    // if (finished_before_timeout)
+    // {
 
-      //exit
-      return 0;
-    }
-    result = ac.getResult();
-    ROS_WARN_NAMED(LOGNAME, "X,Y %s RESULT: (%.2f, %.2f)", result->com.header.frame_id.c_str(), result->com.pose.position.x, result->com.pose.position.y);
+    //   RCLCPP_INFO(node->get_logger(),"Action finished: %s", state.toString().c_str());
+    // }
+    // else {
+    //   RCLCPP_INFOnode->get_logger(),"Action did not finish before the time out.");
+
+    //   //exit
+    //   return 0;
+    // }
+
+    // RCLCPP_WARN(node->get_logger(), "X,Y %s RESULT: (%.2f, %.2f)", result.com.header.frame_id.c_str(),
+    // result.com.pose.position.x, result.com.pose.position.y);
   }
 
-  for (std::string obj : spawn_objs) {
-    if (obj == "block2") {
+  for (std::string obj : spawn_objs)
+  {
+    if (obj == "block2")
+    {
       prev_obj = "block3";
     }
-    if (obj == "block1") {
+    if (obj == "block1")
+    {
       prev_obj = "block2";
     }
 
-
-    moveit_msgs::CollisionObject cobj = createObject(obj);
-    if (cylinder_segment) {
-      cobj.primitive_poses.back().position.x = result->com.pose.position.x;
-      cobj.primitive_poses.back().position.y = result->com.pose.position.y;
+    moveit_msgs::msg::CollisionObject cobj = createObject(node, obj);
+    if (cylinder_segment)
+    {
+      cobj.primitive_poses.back().position.x = result.com.pose.position.x;
+      cobj.primitive_poses.back().position.y = result.com.pose.position.y;
     }
-    ROS_WARN_NAMED(LOGNAME, " COBJ %s RESULT: (%.2f, %.2f, %.2f)",
-      cobj.header.frame_id.c_str(),
-      cobj.primitive_poses.back().position.x,
-      cobj.primitive_poses.back().position.y,
-      cobj.primitive_poses.back().position.z);
+    RCLCPP_WARN(node->get_logger(), " COBJ %s RESULT: (%.2f, %.2f, %.2f)", cobj.header.frame_id.c_str(),
+                cobj.primitive_poses.back().position.x, cobj.primitive_poses.back().position.y,
+                cobj.primitive_poses.back().position.z);
     spawnObject(psi, cobj);
     // sleep for half a second
     deep_pick_place_task.loadParameters(obj, prev_obj);
     prev_obj = obj;
 
     deep_pick_place_task.init();
-    ROS_INFO_NAMED(LOGNAME, "Waiting for octomap update");
-    ros::topic::waitForMessage<sensor_msgs::PointCloud2>("move_group/filtered_cloud");
-    ros::Duration(0.5).sleep();
-    ros::topic::waitForMessage<sensor_msgs::PointCloud2>("move_group/filtered_cloud");
-    ROS_INFO_NAMED(LOGNAME, "Finished waiting for octomap update");
+    // RCLCPP_INFO(node->get_logger(), "Waiting for octomap update");
+    // rclcpp::wait_for_message<sensor_msgs::PointCloud2>("move_group/filtered_cloud");
+    // rclcpp::Duration(0.5).sleep();
+    // rclcpp::wait_for_messag<sensor_msgs::PointCloud2>("move_group/filtered_cloud");
+    // RCLCPP_INFO(node->get_logger(), "Finished waiting for octomap update");
 
     if (deep_pick_place_task.plan())
     {
-      ROS_INFO_NAMED(LOGNAME, "Planning succeded");
-      if (pnh.param("execute", false))
+      RCLCPP_INFO(node->get_logger(), "Planning succeded");
+      if (node->get_parameter_or("execute", false))
       {
-        if (deep_pick_place_task.execute()) {
-        ROS_INFO_NAMED(LOGNAME, "Execution complete");
+        if (deep_pick_place_task.execute())
+        {
+          RCLCPP_INFO(node->get_logger(), "Execution complete");
         }
-        else {
-          ROS_INFO_NAMED(LOGNAME, "Execution failed");
+        else
+        {
+          RCLCPP_INFO(node->get_logger(), "Execution failed");
           break;
         }
       }
       else
       {
-        ROS_INFO_NAMED(LOGNAME, "Execution disabled");
+        RCLCPP_INFO(node->get_logger(), "Execution disabled");
       }
     }
     else
     {
-      ROS_INFO_NAMED(LOGNAME, "Planning failed");
+      RCLCPP_INFO(node->get_logger(), "Planning failed");
       break;
     }
-
-
   }
 
-
   // Keep introspection alive
-  ros::waitForShutdown();
+
+  spinning_thread.join();
+  rclcpp::shutdown();
   return 0;
 }

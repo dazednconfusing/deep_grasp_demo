@@ -1,0 +1,22 @@
+repositories:
+  #moveit2
+  moveit2:
+    type: git
+    url: https://github.com/ros-planning/moveit2.git
+    version: humble
+  moveit_msgs:
+    type: git
+    url: https://github.com/ros-planning/moveit_msgs.git
+    version: humble
+  moveit_resources:
+    type: git
+    url: https://github.com/ros-planning/moveit_resources.git
+    version: humble
+  moveit_tutorials:
+    type: git
+    url: https://github.com/ros-planning/moveit2_tutorials.git
+    version: humble
+  moveit_task_constructor:
+    type: git
+    url: https://github.com/ros-planning/moveit_task_constructor.git
+    version: humble

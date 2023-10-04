@@ -30,14 +30,17 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *********************************************************************/
 
-/* Author: Henning Kayser, Simon Goldstein, Boston Cleek
-   Desc:   A demo to show MoveIt Task Constructor using a deep learning based
-           grasp generator
-*/
+ /* Author: Henning Kayser, Simon Goldstein, Boston Cleek
+    Desc:   A demo to show MoveIt Task Constructor using a deep learning based
+            grasp generator
+ */
 
 #include <deep_grasp_task/deep_pick_place_task.h>
-#include <rosparam_shortcuts/rosparam_shortcuts.h>
+#include <deep_grasp_msgs/action/sample_grasp_poses.hpp>
+#include <moveit/task_constructor/solvers/pipeline_planner.h>
+#include <deep_grasp_task/stages/deep_grasp_pose.h>
 #include <iostream>
+#include <Eigen/Dense>
 
 
 
@@ -45,13 +48,8 @@ namespace deep_grasp_task
 {
 constexpr char LOGNAME[] = "pick_place_task";
 DeepPickPlaceTask::DeepPickPlaceTask(const std::string& task_name,
-  const ros::NodeHandle& nh)
-  : nh_(nh), task_name_(task_name), execute_("execute_task_solution", true)
-{
-}
-DeepPickPlaceTask::DeepPickPlaceTask(const std::string& task_name,
-  const ros::NodeHandle& nh, const std::string& object)
-  : nh_(nh), task_name_(task_name), execute_("execute_task_solution", true)
+  const rclcpp::Node::SharedPtr& nh)
+  : nh_(nh), task_name_(task_name)
 {
 }
 void DeepPickPlaceTask::loadParameters()
@@ -62,6 +60,32 @@ void DeepPickPlaceTask::loadParameters(const std::string& object)
 {
   loadParameters(object, "");
 }
+
+geometry_msgs::msg::Pose poseFromXYZRPY(std::vector<double> pose)
+{
+  geometry_msgs::msg::Pose p;
+  p.position.x = pose[0];
+  p.position.y = pose[1];
+  p.position.z = pose[2];
+  Eigen::Quaterniond q = Eigen::AngleAxisd(pose[3], Eigen::Vector3d::UnitX()) *
+                         Eigen::AngleAxisd(pose[4], Eigen::Vector3d::UnitY()) *
+                         Eigen::AngleAxisd(pose[5], Eigen::Vector3d::UnitZ());
+  p.orientation.x = q.x();
+  p.orientation.y = q.y();
+  p.orientation.z = q.z();
+  p.orientation.w = q.w();
+  return p;
+}
+
+Eigen::Isometry3d IsometryFromXYZRPY(std::vector<double> pose)
+{
+  Eigen::Translation3d translate(Eigen::Vector3d(pose[0], pose[1], pose[2]));
+  Eigen::Quaterniond q = Eigen::AngleAxisd(pose[3], Eigen::Vector3d::UnitX()) *
+                         Eigen::AngleAxisd(pose[4], Eigen::Vector3d::UnitY()) *
+                         Eigen::AngleAxisd(pose[5], Eigen::Vector3d::UnitZ());
+  return translate * q;
+}
+
 void DeepPickPlaceTask::loadParameters(const std::string& object, const std::string& allowed_collision)
 {
   /****************************************************
@@ -69,48 +93,48 @@ void DeepPickPlaceTask::loadParameters(const std::string& object, const std::str
    *               Load Parameters                    *
    *                                                  *
    ***************************************************/
-  ROS_INFO_NAMED(LOGNAME, "Loading task parameters");
-  ros::NodeHandle pnh("~");
-
+  RCLCPP_INFO(nh_->get_logger(), "Loading task parameters");
   // Planning group properties
-  size_t errors = 0;
-  errors += !rosparam_shortcuts::get(LOGNAME, pnh, "arm_group_name", arm_group_name_);
-  errors += !rosparam_shortcuts::get(LOGNAME, pnh, "hand_group_name", hand_group_name_);
-  errors += !rosparam_shortcuts::get(LOGNAME, pnh, "eef_name", eef_name_);
-  errors += !rosparam_shortcuts::get(LOGNAME, pnh, "hand_frame", hand_frame_);
-  errors += !rosparam_shortcuts::get(LOGNAME, pnh, "world_frame", world_frame_);
-  errors += !rosparam_shortcuts::get(LOGNAME, pnh, "grasp_frame_transform", grasp_frame_transform_);
+  nh_->get_parameter("arm_group_name", arm_group_name_);
+  nh_->get_parameter("hand_group_name", hand_group_name_);
+  nh_->get_parameter("eef_name", eef_name_);
+  nh_->get_parameter("hand_frame", hand_frame_);
+  nh_->get_parameter("world_frame", world_frame_);
+      std::vector<double> grasp_frame_transform;
+  nh_->get_parameter( "grasp_frame_transform", grasp_frame_transform);
+  grasp_frame_transform_ = IsometryFromXYZRPY(grasp_frame_transform);
 
   // Predefined pose targets
-  errors += !rosparam_shortcuts::get(LOGNAME, pnh, "hand_open_pose", hand_open_pose_);
-  errors += !rosparam_shortcuts::get(LOGNAME, pnh, "hand_close_pose", hand_close_pose_);
-  errors += !rosparam_shortcuts::get(LOGNAME, pnh, "arm_home_pose", arm_home_pose_);
+  nh_->get_parameter( "hand_open_pose", hand_open_pose_);
+  nh_->get_parameter( "hand_close_pose", hand_close_pose_);
+  nh_->get_parameter( "arm_home_pose", arm_home_pose_);
 
   // Target object
-  errors += !rosparam_shortcuts::get(LOGNAME, pnh, object + "_name", object_name_);
-  errors += !rosparam_shortcuts::get(LOGNAME, pnh, object + "_dimensions", object_dimensions_);
-  errors += !rosparam_shortcuts::get(LOGNAME, pnh, "object_reference_frame", object_reference_frame_);
-  errors += !rosparam_shortcuts::get(LOGNAME, pnh, "surface_link", surface_link_);
-  errors += !rosparam_shortcuts::get(LOGNAME, pnh, object + "_start_surface", start_surface_);
-  errors += !rosparam_shortcuts::get(LOGNAME, pnh, object + "_end_surface", end_surface_);
+  nh_->get_parameter(object + "_name", object_name_);
+  nh_->get_parameter(object + "_dimensions", object_dimensions_);
+  nh_->get_parameter("object_reference_frame", object_reference_frame_);
+  nh_->get_parameter("surface_link", surface_link_);
+  nh_->get_parameter(object + "_start_surface", start_surface_);
+  nh_->get_parameter(object + "_end_surface", end_surface_);
   support_surfaces_ = { surface_link_ };
 
   // Deep grasp properties
-  errors += !rosparam_shortcuts::get(LOGNAME, pnh, "action_name", action_name_);
+  nh_->get_parameter("action_name", action_name_);
 
   // Pick/Place metrics
-  errors += !rosparam_shortcuts::get(LOGNAME, pnh, "approach_object_min_dist", approach_object_min_dist_);
-  errors += !rosparam_shortcuts::get(LOGNAME, pnh, "approach_object_max_dist", approach_object_max_dist_);
-  errors += !rosparam_shortcuts::get(LOGNAME, pnh, "lower_object_min_dist", lower_object_min_dist_);
-  errors += !rosparam_shortcuts::get(LOGNAME, pnh, "lower_object_max_dist", lower_object_max_dist_);
-  errors += !rosparam_shortcuts::get(LOGNAME, pnh, "lift_object_min_dist", lift_object_min_dist_);
-  errors += !rosparam_shortcuts::get(LOGNAME, pnh, "lift_object_max_dist", lift_object_max_dist_);
-  errors += !rosparam_shortcuts::get(LOGNAME, pnh, "place_surface_offset", place_surface_offset_);
-  errors += !rosparam_shortcuts::get(LOGNAME, pnh, object + "_place_pose", place_pose_);
-  errors += !rosparam_shortcuts::get(LOGNAME, pnh, "deep_grasps", deep_grasps_);
+  nh_->get_parameter("approach_object_min_dist", approach_object_min_dist_);
+  nh_->get_parameter("approach_object_max_dist", approach_object_max_dist_);
+  nh_->get_parameter("lower_object_min_dist", lower_object_min_dist_);
+  nh_->get_parameter("lower_object_max_dist", lower_object_max_dist_);
+  nh_->get_parameter("lift_object_min_dist", lift_object_min_dist_);
+  nh_->get_parameter("lift_object_max_dist", lift_object_max_dist_);
+  nh_->get_parameter("place_surface_offset", place_surface_offset_);
+    std::vector<double> place_pose;
+  nh_->get_parameter( object + "_place_pose", place_pose);
+  place_pose_ = poseFromXYZRPY(place_pose);
+  nh_->get_parameter("deep_grasps", deep_grasps_);
 
   allowed_collision_ = std::string(allowed_collision);
-  rosparam_shortcuts::shutdownIfError(LOGNAME, errors);
 }
 
 
@@ -139,9 +163,10 @@ std::unique_ptr<stages::ComputeIK> GenerateGraspWrapper(T&& grasp_generator,
 
 void DeepPickPlaceTask::init()
 {
-  ROS_INFO_NAMED(LOGNAME, "Initializing task pipeline");
+  RCLCPP_INFO(nh_->get_logger(), "Initializing task pipeline");
+  RCLCPP_ERROR_STREAM(nh_->get_logger(), "**************pregrasp: " << hand_open_pose_.c_str());
   const std::string object = object_name_;
-  ROS_INFO_STREAM_NAMED(LOGNAME, "OBJECT NAME: " << object << ", ALLOWED COLLISION: " << allowed_collision_);
+  RCLCPP_INFO_STREAM(nh_->get_logger(), "OBJECT NAME: " << object << ", ALLOWED COLLISION: " << allowed_collision_);
 
   // Reset ROS introspection before constructing the new object
   // TODO(henningkayser): verify this is a bug, fix if possible
@@ -151,10 +176,10 @@ void DeepPickPlaceTask::init()
 
   Task& t = *task_;
   t.stages()->setName(task_name_);
-  t.loadRobotModel();
+  t.loadRobotModel(nh_, "robot_description");
 
   // Sampling planner
-  auto sampling_planner = std::make_shared<solvers::PipelinePlanner>();
+  auto sampling_planner = std::make_shared<solvers::PipelinePlanner>(nh_);
   sampling_planner->setProperty("goal_joint_tolerance", 1e-5);
 
   // Cartesian planner
@@ -224,11 +249,11 @@ void DeepPickPlaceTask::init()
 ***************************************************/
 
     auto stage = std::make_unique<stages::ModifyPlanningScene>("allow collision (hand,object) current state 2");
-      stage->allowCollisions(
-        object, t.getRobotModel()->getJointModelGroup(hand_group_name_)->getLinkModelNamesWithCollisionGeometry(),
-        true);
+    stage->allowCollisions(
+      object, t.getRobotModel()->getJointModelGroup(hand_group_name_)->getLinkModelNamesWithCollisionGeometry(),
+      true);
 
-      current->insert(std::move(stage));
+    current->insert(std::move(stage));
 
 
     current_state_ptr = current.get();
@@ -267,7 +292,7 @@ void DeepPickPlaceTask::init()
    ***************************************************/
   {  // Move-to pre-grasp
     auto stage = std::make_unique<stages::Connect>(
-        "move to pick", stages::Connect::GroupPlannerVector{ { arm_group_name_, sampling_planner } });
+      "move to pick", stages::Connect::GroupPlannerVector{ { arm_group_name_, sampling_planner } });
     stage->setTimeout(5.0);
     stage->properties().configureInitFrom(Stage::PARENT);
     t.add(std::move(stage));
@@ -312,7 +337,7 @@ void DeepPickPlaceTask::init()
       stage->setMinMaxDistance(approach_object_min_dist_, approach_object_max_dist_);
 
       // Set hand forward direction
-      geometry_msgs::Vector3Stamped vec;
+      geometry_msgs::msg::Vector3Stamped vec;
       vec.header.frame_id = world_frame_;
       vec.vector.z = -1.0;
       stage->setDirection(vec);
@@ -334,18 +359,19 @@ void DeepPickPlaceTask::init()
         ***************************************************/
 
     {
-
+  RCLCPP_ERROR_STREAM(nh_->get_logger(), "**************pregrasp: " << hand_open_pose_.c_str());
       if (deep_grasps_) {
-        auto dg = std::make_unique<stages::DeepGraspPose<deep_grasp_msgs::SampleGraspPosesAction >>(
-          action_name_, "generate DEEP grasp pose");
+        std::string stage_name = "generate DEEP grasp pose";
+        auto dg = std::make_unique<stages::DeepGraspPose<deep_grasp_msgs::action::SampleGraspPoses >>(
+          action_name_, stage_name, 0, 0);
 
         std::unique_ptr<stages::ComputeIK> wrapper = GenerateGraspWrapper(std::move(dg), hand_open_pose_, object, Eigen::Isometry3d::Identity(), hand_frame_, current_state_ptr);
         grasp->insert(std::move(wrapper));
       }
       else {
         auto gg = std::make_unique< stages::GenerateGraspPose>("generate grasp pose");
-
         gg->setAngleDelta(4 * M_PI / 16);
+          RCLCPP_ERROR_STREAM(nh_->get_logger(), "2**************pregrasp: " << hand_open_pose_.c_str());
         std::unique_ptr<stages::ComputeIK> wrapper = GenerateGraspWrapper(std::move(gg), hand_open_pose_, object, grasp_frame_transform_, hand_frame_, current_state_ptr);
         grasp->insert(std::move(wrapper));
       }
@@ -418,7 +444,7 @@ void DeepPickPlaceTask::init()
       stage->properties().set("marker_ns", "lift_object");
 
       // Set upward direction
-      geometry_msgs::Vector3Stamped vec;
+      geometry_msgs::msg::Vector3Stamped vec;
       vec.header.frame_id = world_frame_;
       vec.vector.z = 1.0;
       stage->setDirection(vec);
@@ -446,7 +472,7 @@ void DeepPickPlaceTask::init()
    *****************************************************/
   {
     auto stage = std::make_unique<stages::Connect>(
-        "move to place", stages::Connect::GroupPlannerVector{ { arm_group_name_, sampling_planner } });
+      "move to place", stages::Connect::GroupPlannerVector{ { arm_group_name_, sampling_planner } });
     stage->setTimeout(5.0);
     stage->properties().configureInitFrom(Stage::PARENT);
     t.add(std::move(stage));
@@ -473,7 +499,7 @@ void DeepPickPlaceTask::init()
       stage->setMinMaxDistance(lower_object_min_dist_, lower_object_max_dist_);
 
       // Set downward direction
-      geometry_msgs::Vector3Stamped vec;
+      geometry_msgs::msg::Vector3Stamped vec;
       vec.header.frame_id = world_frame_;
       vec.vector.z = -1.0;
       stage->setDirection(vec);
@@ -491,11 +517,11 @@ void DeepPickPlaceTask::init()
       stage->setObject(object);
 
       // Set target pose
-      geometry_msgs::PoseStamped p;
+      geometry_msgs::msg::PoseStamped p;
       p.header.frame_id = object_reference_frame_;
       p.pose = place_pose_;
       p.pose.position.z += 0.5 * object_dimensions_.at(0) + place_surface_offset_;
-      // ROS_WARN_STREAM_NAMED(LOGNAME, " PARAM place pose: " << p.pose.position.x << "," << p.pose.position.y << "," << p.pose.position.z);
+      // ROS_WARN_STREAM_NAMED(nh_->get_logger(), " PARAM place pose: " << p.pose.position.x << "," << p.pose.position.y << "," << p.pose.position.z);
       stage->setPose(p);
       stage->setMonitoredStage(attach_object_stage);  // Hook into attach_object_stage
       // stage->addSolutionCallback([](const SolutionBase& s) {
@@ -507,12 +533,12 @@ void DeepPickPlaceTask::init()
       //   robot_state_.getAttachedBodies(attached_bodies);
 
       //   if (attached_bodies.size() > 0) {
-      //     ROS_WARN_STREAM_NAMED(LOGNAME, " num attached bodies: " << attached_bodies.size());
+      //     ROS_WARN_STREAM_NAMED(nh_->get_logger(), " num attached bodies: " << attached_bodies.size());
       //     const auto* body = attached_bodies[0];
       //     // current object_pose w.r.t. planning frame
       //     const Eigen::Isometry3d& orig_object_pose = body->getGlobalPose();
       //     const auto& pose_ = orig_object_pose.translation();
-      //     ROS_WARN_STREAM_NAMED(LOGNAME, body->getName() << " place pose: " << pose_.x() << "," << pose_.y() << "," << pose_.z());
+      //     ROS_WARN_STREAM_NAMED(nh_->get_logger(), body->getName() << " place pose: " << pose_.x() << "," << pose_.y() << "," << pose_.z());
       //   }
       //   });
 
@@ -531,12 +557,12 @@ void DeepPickPlaceTask::init()
       //   robot_state_.getAttachedBodies(attached_bodies);
 
       //   if (attached_bodies.size() > 0) {
-      //     ROS_WARN_STREAM_NAMED(LOGNAME, " num attached bodies: " << attached_bodies.size());
+      //     ROS_WARN_STREAM_NAMED(nh_->get_logger(), " num attached bodies: " << attached_bodies.size());
       //     const auto* body = attached_bodies[0];
       //     // current object_pose w.r.t. planning frame
       //     const Eigen::Isometry3d& orig_object_pose = body->getGlobalPose();
       //     const auto& pose_ = orig_object_pose.translation();
-      //     ROS_WARN_STREAM_NAMED(LOGNAME, body->getName() << " IK place pose: " << pose_.x() << "," << pose_.y() << "," << pose_.z());
+      //     ROS_WARN_STREAM_NAMED(nh_->get_logger(), body->getName() << " IK place pose: " << pose_.x() << "," << pose_.y() << "," << pose_.z());
       //   }
       //   });
 
@@ -572,7 +598,7 @@ void DeepPickPlaceTask::init()
       stage->setMinMaxDistance(lift_object_min_dist_, lift_object_max_dist_);
       stage->setIKFrame(hand_frame_);
       stage->properties().set("marker_ns", "retreat");
-      geometry_msgs::Vector3Stamped vec;
+      geometry_msgs::msg::Vector3Stamped vec;
       vec.header.frame_id = hand_frame_;
       vec.vector.x = -1.0;
       stage->setDirection(vec);
@@ -611,54 +637,53 @@ void DeepPickPlaceTask::init()
 
 bool DeepPickPlaceTask::plan()
 {
-  ROS_INFO_NAMED(LOGNAME, "Start searching for task solutions");
-  ros::NodeHandle pnh("~");
-  int max_solutions = pnh.param<int>("max_solutions", 10);
-
+  RCLCPP_INFO(nh_->get_logger(), "Start searching for task solutions");
+  int max_solutions = nh_->get_parameter_or("max_solutions", 10);
+   RCLCPP_INFO(nh_->get_logger(), "About to plan");
   try
   {
     task_->plan(max_solutions);
   }
   catch (InitStageException& e)
   {
-    ROS_ERROR_STREAM_NAMED(LOGNAME, "Initialization failed: " << e);
+    RCLCPP_ERROR_STREAM(nh_->get_logger(), "Initialization failed: " << e);
     return false;
   }
   if (task_->numSolutions() == 0)
   {
-    ROS_ERROR_NAMED(LOGNAME, "Planning failed");
+    RCLCPP_ERROR(nh_->get_logger(), "Planning failed");
     return false;
   }
-  ROS_INFO_NAMED(LOGNAME, "SUCCESS!!!!! AYYYYYY");
+  task_->introspection().publishSolution(*task_->solutions().front());
+  RCLCPP_INFO(nh_->get_logger(), "SUCCESS!!!!! AYYYYYY");
   return true;
 }
 
 bool DeepPickPlaceTask::execute()
 {
-  // moveit_msgs::MoveItErrorCodes execute_result;
+  // moveit_msgs::msg::MoveItErrorCodes execute_result;
   // execute_result = task_->execute(*task_->solutions().front());
   // // // If you want to inspect the goal message, use this instead:
-  // // actionlib::SimpleActionClient<moveit_task_constructor_msgs::ExecuteTaskSolutionAction>
+  // // actionlib::SimpleActionClient<moveit_task_constructor_msgs::msg::ExecuteTaskSolutionAction>
   // // execute("execute_task_solution", true); execute.waitForServer();
-  // // moveit_task_constructor_msgs::ExecuteTaskSolutionGoal execute_goal;
+  // // moveit_task_constructor_msgs::msg::ExecuteTaskSolutionGoal execute_goal;
   // // task_->solutions().front()->fillMessage(execute_goal.solution);
   // // execute.sendGoalAndWait(execute_goal);
   // // execute_result = execute.getResult()->error_code;
 
-  // if (execute_result.val != moveit_msgs::MoveItErrorCodes::SUCCESS) {
+  // if (execute_result.val != moveit_msgs::msg::MoveItErrorCodes::SUCCESS) {
   //   ROS_ERROR_STREAM("Task execution failed and returned: " << execute_result.val);
   // }
-  ROS_INFO_NAMED(LOGNAME, "Executing solution trajectory");
-  moveit_task_constructor_msgs::ExecuteTaskSolutionGoal execute_goal;
-  task_->solutions().front()->toMsg(execute_goal.solution);
-  execute_.sendGoal(execute_goal);
-  execute_.waitForResult();
-  moveit_msgs::MoveItErrorCodes execute_result = execute_.getResult()->error_code;
+  RCLCPP_INFO(nh_->get_logger(), "Executing solution trajectory.");
+  auto result = task_->execute(*task_->solutions().front());
 
-  if (execute_result.val != moveit_msgs::MoveItErrorCodes::SUCCESS)
+  if (result.val != moveit_msgs::msg::MoveItErrorCodes::SUCCESS)
   {
-    ROS_ERROR_STREAM_NAMED(LOGNAME, "Task execution failed and returned: " << execute_.getState().toString());
+    // task_->introspection().publishTaskState();
+    RCLCPP_ERROR_STREAM(nh_->get_logger(), "Task execution failed and returned: " << result.val);
     return false;
+  } else {
+    RCLCPP_INFO(nh_->get_logger(), "Task execution completed.");
   }
 
   return true;

@@ -1,4 +1,3 @@
-<?xml version="1.0"?>
 <launch>
      <arg name="debug" default="false" />
      <arg unless="$(arg debug)" name="launch_prefix" value="" />

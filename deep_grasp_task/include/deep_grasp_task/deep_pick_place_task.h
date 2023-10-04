@@ -38,10 +38,7 @@
 #pragma once
 
 // ROS
-#include <ros/ros.h>
-#include <actionlib/client/simple_action_client.h>
-#include <actionlib/server/simple_action_server.h>
-#include <eigen_conversions/eigen_msg.h>
+#include <rclcpp/rclcpp.hpp>
 #include <eigen3/Eigen/Eigen>
 
 
@@ -59,16 +56,11 @@
 #include <moveit/task_constructor/stages/generate_grasp_pose.h>
 #include <moveit/task_constructor/stages/generate_pose.h>
 #include <moveit/task_constructor/stages/generate_place_pose.h>
-#include <deep_grasp_task/stages/deep_grasp_pose.h>
 #include <moveit/task_constructor/stages/modify_planning_scene.h>
 #include <moveit/task_constructor/stages/move_relative.h>
 #include <moveit/task_constructor/stages/move_to.h>
 #include <moveit/task_constructor/stages/predicate_filter.h>
 #include <moveit/task_constructor/solvers/cartesian_path.h>
-#include <moveit/task_constructor/solvers/pipeline_planner.h>
-#include <moveit_task_constructor_msgs/ExecuteTaskSolutionAction.h>
-#include <deep_grasp_msgs/SampleGraspPosesAction.h>
-
 namespace deep_grasp_task
 {
 using namespace moveit::task_constructor;
@@ -76,9 +68,7 @@ using namespace moveit::task_constructor;
 class DeepPickPlaceTask
 {
 public:
-  DeepPickPlaceTask(const std::string& task_name, const ros::NodeHandle& nh);
-  DeepPickPlaceTask(const std::string& task_name, const ros::NodeHandle& nh,
-    const std::string& object);
+  DeepPickPlaceTask(const std::string& task_name, const rclcpp::Node::SharedPtr& nh);
   ~DeepPickPlaceTask() = default;
 
   void loadParameters();
@@ -92,7 +82,7 @@ public:
   bool execute();
 
 private:
-  ros::NodeHandle nh_;
+  rclcpp::Node::SharedPtr nh_;
 
   std::string task_name_;
   moveit::task_constructor::TaskPtr task_;
@@ -122,8 +112,6 @@ private:
   std::string start_surface_;
   std::string end_surface_;
 
-  // Execution
-  actionlib::SimpleActionClient<moveit_task_constructor_msgs::ExecuteTaskSolutionAction> execute_;
 
   // Pick metrics
   Eigen::Isometry3d grasp_frame_transform_;
@@ -135,7 +123,7 @@ private:
   double lift_object_max_dist_;
 
   // Place metrics
-  geometry_msgs::Pose place_pose_;
+  geometry_msgs::msg::Pose place_pose_;
   double place_surface_offset_;
 
   bool deep_grasps_;
