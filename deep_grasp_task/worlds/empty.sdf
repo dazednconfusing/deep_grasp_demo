@@ -3,8 +3,8 @@
   <world name="empty">
     <!-- Sim must be faster than the controller rate or there will be an error -->
     <physics name="sim_time" type="ignored">
-      <max_step_size>0.001</max_step_size>
-      <real_time_update_rate>0.001</real_time_update_rate>
+      <max_step_size>0.01</max_step_size>
+      <real_time_update_rate>100</real_time_update_rate>
       <real_time_factor>1.0</real_time_factor>
     </physics>
 
@@ -28,6 +28,23 @@
       filename="ignition-gazebo-forcetorque-system"
       name="ignition::gazebo::systems::ForceTorque">
     </plugin>
+
+    <!-- <plugin
+      filename="ignition-pose-publisher-system"
+      name="ignition::gazebo::systems::PosePublisher">
+      <publish_link_pose>true</publish_link_pose>
+      <use_pose_vector_msg>true</use_pose_vector_msg>
+      <static_publisher>true</static_publisher>
+      <static_update_frequency>1</static_update_frequency>
+    </plugin>
+
+    <plugin
+      filename="ignition-odometry-publisher-system"
+      name="ignition::gazebo::systems::OdometryPublisher">
+      <odom_frame>odom</odom_frame>
+      <robot_base_frame>locobot_base_link</robot_base_frame>
+    </plugin> -->
+
     <!-- <plugin
       filename="ignition-gazebo-sensors-system"
       name="ignition::gazebo::systems::Sensors">
