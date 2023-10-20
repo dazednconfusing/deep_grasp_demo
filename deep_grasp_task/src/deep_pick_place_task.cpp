@@ -164,7 +164,6 @@ std::unique_ptr<stages::ComputeIK> GenerateGraspWrapper(T&& grasp_generator,
 void DeepPickPlaceTask::init()
 {
   RCLCPP_INFO(nh_->get_logger(), "Initializing task pipeline");
-  RCLCPP_ERROR_STREAM(nh_->get_logger(), "**************pregrasp: " << hand_open_pose_.c_str());
   const std::string object = object_name_;
   RCLCPP_INFO_STREAM(nh_->get_logger(), "OBJECT NAME: " << object << ", ALLOWED COLLISION: " << allowed_collision_);
 
@@ -359,7 +358,6 @@ void DeepPickPlaceTask::init()
         ***************************************************/
 
     {
-  RCLCPP_ERROR_STREAM(nh_->get_logger(), "**************pregrasp: " << hand_open_pose_.c_str());
       if (deep_grasps_) {
         std::string stage_name = "generate DEEP grasp pose";
         auto dg = std::make_unique<stages::DeepGraspPose<deep_grasp_msgs::action::SampleGraspPoses >>(
@@ -371,7 +369,6 @@ void DeepPickPlaceTask::init()
       else {
         auto gg = std::make_unique< stages::GenerateGraspPose>("generate grasp pose");
         gg->setAngleDelta(4 * M_PI / 16);
-          RCLCPP_ERROR_STREAM(nh_->get_logger(), "2**************pregrasp: " << hand_open_pose_.c_str());
         std::unique_ptr<stages::ComputeIK> wrapper = GenerateGraspWrapper(std::move(gg), hand_open_pose_, object, grasp_frame_transform_, hand_frame_, current_state_ptr);
         grasp->insert(std::move(wrapper));
       }

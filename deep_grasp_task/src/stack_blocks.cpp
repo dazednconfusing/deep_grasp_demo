@@ -134,15 +134,14 @@ std::string getVersion() {
 int main(int argc, char** argv)
 {
   rclcpp::init(argc, argv);
+  auto executor = std::make_shared<rclcpp::executors::SingleThreadedExecutor>();
   rclcpp::NodeOptions node_options;
   node_options.automatically_declare_parameters_from_overrides(true);
   node_options.allow_undeclared_parameters(true);
   auto node = rclcpp::Node::make_shared("deep_pick_place_task", node_options);
-  std::thread spinning_thread([node] { rclcpp::spin(node); });
   RCLCPP_INFO(node->get_logger(), "Init deep_grasp_demo.");
   RCLCPP_INFO_STREAM(node->get_logger(), "C++ version"  << getVersion().c_str());
-  auto parameter_fetcher = rclcpp::Node::make_shared("parameter_fetcher", node_options);
-  auto parameters_client = std::make_shared<rclcpp::SyncParametersClient>(parameter_fetcher, "move_group");
+  auto parameters_client = std::make_shared<rclcpp::SyncParametersClient>(executor, node, "move_group");
   while (!parameters_client->wait_for_service(std::chrono::seconds(1)))
   {
     if (!rclcpp::ok())
@@ -151,6 +150,7 @@ int main(int argc, char** argv)
     }
     RCLCPP_INFO_ONCE(node->get_logger(), "service not available, waiting again...");
   }
+  // TODO(speralta):(Use MoveitConfigBuilder to set params in launch file).
   RCLCPP_INFO(node->get_logger(), "Setting parameters");
   auto list_result =
       parameters_client->list_parameters({ "move_group", "robot_description_planning", "interbotix_gripper",
@@ -275,7 +275,7 @@ int main(int argc, char** argv)
 
   // Keep introspection alive
 
-  spinning_thread.join();
+  executor->spin();
   rclcpp::shutdown();
   return 0;
 }

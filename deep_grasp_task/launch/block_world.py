@@ -115,7 +115,7 @@ def generate_launch_description() -> LaunchDescription:
         z,
         xacro_args='color:=yellow')
 
-    # simply TODO: Load topics from yaml file: https://github.com/gazebosim/ros_gz/tree/humble/ros_gz_bridge
+    # Examples: https://github.com/gazebosim/ros_gz/tree/humble/ros_gz_bridge
     bridge = Node(
         package='ros_gz_bridge',
         executable='parameter_bridge',
@@ -144,7 +144,8 @@ def generate_launch_description() -> LaunchDescription:
             #     }
             # },
             {
-                'use_sim_time': True
+                'use_sim_time': True,
+                'subscription_heartbeat': 100
             }
         ],
     )
@@ -161,8 +162,8 @@ def generate_launch_description() -> LaunchDescription:
         output={'both': 'screen'},
     )
 
-    stack_blocks = Node(
-        name="stack_blocks_task",
+    stack_blocks_node = Node(
+        name="stack_blocks_node",
         package='deep_grasp_task',
         executable='stack_blocks',
         output='screen',
@@ -173,6 +174,7 @@ def generate_launch_description() -> LaunchDescription:
             },
         ],
     )
+   
     return LaunchDescription([
         DeclareLaunchArgument(
             'world_filepath',
@@ -193,6 +195,6 @@ def generate_launch_description() -> LaunchDescription:
         spawn_block1,
         spawn_block2,
         spawn_block3,
-        stack_blocks,
+        stack_blocks_node,
         # moveit_rviz_node,
     ])
