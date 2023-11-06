@@ -22,12 +22,17 @@
      <arg name="use_camera" default="true" />
      <arg name="use_fake" value="false" if="$(arg use_gazebo)" />
      <arg name="use_fake" value="true" unless="$(arg use_gazebo)" />
+     <!-- <param name="move_group/capabilities" value="move_group/ExecuteTaskSolutionCapability" />
+
+     <rosparam name="/locobot/move_group/capabilities" value="move_group/ExecuteTaskSolutionCapability" /> -->
+
      <!-- Load panda demo with MTC's execution capability -->
      <include file="$(find interbotix_xslocobot_moveit)/launch/xslocobot_moveit.launch">
           <arg name="use_gazebo" value="$(arg use_gazebo)" />
           <arg name="use_fake" value="$(arg use_fake)" />
-          <arg name="use_moveit_rviz" value="false" />
+          <arg name="use_moveit_rviz" value="true" />
           <arg name="use_camera" value="$(arg use_camera)" />
+          <arg name="robot_model" value="locobot_wx250s"/>
      </include>
 
      <param name="table_desc" command="$(find xacro)/xacro $(arg table_args) '$(find deep_grasp_task)/urdf/objects/table.urdf.xacro'" />
@@ -39,16 +44,16 @@
      <node name="spawn_gazebo_block2" pkg="gazebo_ros" type="spawn_model" args="-urdf -param block2_desc -model block2" respawn="false" output="screen" />
      <param name="block3_desc" command="$(find xacro)/xacro $(arg block3_args) '$(find gazebo_models)/block/block.urdf.xacro'" />
      <node name="spawn_gazebo_block3" pkg="gazebo_ros" type="spawn_model" args="-urdf -param block3_desc -model block3" respawn="false" output="screen" />
-
-     <param name="move_group/capabilities" value="move_group/ExecuteTaskSolutionCapability" />
+<!-- 
+     <param name="move_group/capabilities" value="move_group/ExecuteTaskSolutionCapability" /> -->
 
      <!-- <param name="locobot/move_group/capabilities" value="move_group/ExecuteTaskSolutionCapability" /> -->
 
-     <arg name="rviz_config" default="mtc_salad.rviz" />
+     <!-- <arg name="rviz_config" default="mtc_salad.rviz" /> -->
      <!-- Run rviz with prepared config -->
-     <include file="$(find interbotix_xslocobot_moveit)/launch/moveit_rviz.launch">
+     <!-- <include file="$(find interbotix_xslocobot_moveit)/launch/moveit_rviz.launch"> -->
           <!-- <include ns="locobot" file="$(find interbotix_xslocobot_moveit)/launch/moveit_rviz.launch"> -->
-          <arg name="rviz_config" value="$(find deep_grasp_task)/config/$(arg rviz_config)" />
-     </include>
+          <!-- <arg name="rviz_config" value="$(find deep_grasp_task)/config/$(arg rviz_config)" />
+     </include> -->
 
 </launch>

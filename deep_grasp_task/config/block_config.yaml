@@ -3,9 +3,9 @@ max_solutions: 10
 
 # Planning group and link names
 arm_group_name: "interbotix_arm"
-eef_name: "interbotix_hand"
-hand_group_name: "interbotix_hand"
-hand_frame: "locobot_fingers_link"
+eef_name: "interbotix_gripper"
+hand_group_name: "interbotix_gripper"
+hand_frame: "locobot/ee_gripper_link"
 
 # Poses
 hand_open_pose: "Open"

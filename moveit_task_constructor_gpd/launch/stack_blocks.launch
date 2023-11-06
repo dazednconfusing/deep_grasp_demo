@@ -8,7 +8,7 @@
   <arg name="deep_grasps" default="true" />
 
   <arg unless="$(arg debug)" name="launch_prefix" value="" />
-  <arg if="$(arg debug)" name="launch_prefix" value="gdb -ex run --args" />
+  <arg if="$(arg debug)" name="launch_prefix" value="valgrind" />
 
   <!-- Cylinder Segment Params. -->
   <arg name="cylinder_segment" default="true" />
@@ -19,7 +19,7 @@
 
   <arg name="action_name" value="generate_grasps" doc="action name space" />
   <arg name="frame_id" value="world" doc="frame of the grasps sent to MTC" />
-  <arg unless="$(arg load_cloud)" name="point_cloud_topic" value="/camera/depth/color/points" doc="point cloud topic name" />
+  <arg unless="$(arg load_cloud)" name="point_cloud_topic" value="camera/depth_registered/points" doc="point cloud topic name" />
   <arg if="$(eval arg('load_cloud') and arg('pcd') == '')" name="path_to_pcd_file" value="$(find moveit_task_constructor_gpd)/data/pointclouds/$(arg object).pcd" doc="path to point cloud file" />
 
   <arg if="$(eval arg('load_cloud') and arg('pcd') != '')" name="path_to_pcd_file" value="$(find moveit_task_constructor_gpd)/data/pointclouds/$(arg pcd).pcd" doc="path to point cloud file" />
@@ -27,7 +27,7 @@
   <arg name="path_to_gpd_config" value="$(find moveit_task_constructor_gpd)/config/gpd_config.yaml" doc="path to GPD config and gripper params file" />
 
   <!-- Run MTC pick and place -->
-  <node name="mtc_task" pkg="deep_grasp_task" type="$(arg task)" output="screen" launch-prefix="$(arg launch_prefix)">
+  <node name="mtc_task" pkg="deep_grasp_task" type="$(arg task)" output="screen" launch-prefix="$(arg launch_prefix)" ns="locobot">
     <param name="execute" value="true" />
     <param name="action_name" value="$(arg action_name)" />
     <param name="cylinder_segment" value="$(arg cylinder_segment)" />
@@ -44,7 +44,7 @@
 
 
   <!-- Grasp detection using GPD -->
-  <node name="grasp_cloud_detection" pkg="moveit_task_constructor_gpd" type="grasp_cloud_detection" output="screen" launch-prefix="$(arg launch_prefix)">
+  <node name="grasp_cloud_detection" pkg="moveit_task_constructor_gpd" type="grasp_cloud_detection" output="screen" launch-prefix="$(arg launch_prefix)" ns="locobot">
     <!-- <node ns="locobot" name="grasp_cloud_detection" pkg="moveit_task_constructor_gpd" type="grasp_cloud_detection" output="screen"> -->
     <param if="$(arg load_cloud)" name="path_to_pcd_file" value="$(arg path_to_pcd_file)" />
     <param unless="$(arg load_cloud)" name="point_cloud_topic" value="$(arg point_cloud_topic)" />
