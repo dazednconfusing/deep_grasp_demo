@@ -53,15 +53,18 @@
 #include "tf2_eigen/tf2_eigen.hpp"
 #include <eigen3/Eigen/Eigen>
 
-geometry_msgs::msg::Pose poseFromXYZRPY(std::vector<double> pose)
+geometry_msgs::msg::Pose poseFromXYZRPY(std::vector<double>pose)
 {
   geometry_msgs::msg::Pose p;
+
   p.position.x = pose[0];
   p.position.y = pose[1];
   p.position.z = pose[2];
-  Eigen::Quaterniond q = Eigen::AngleAxisd(pose[3], Eigen::Vector3d::UnitX()) *
+  Eigen::Quaterniond q =  Eigen::AngleAxisd(pose[5], Eigen::Vector3d::UnitZ()) *
                          Eigen::AngleAxisd(pose[4], Eigen::Vector3d::UnitY()) *
-                         Eigen::AngleAxisd(pose[5], Eigen::Vector3d::UnitZ());
+                         Eigen::AngleAxisd(pose[3], Eigen::Vector3d::UnitX());
+
+  q.normalize();
   p.orientation.x = q.x();
   p.orientation.y = q.y();
   p.orientation.z = q.z();
