@@ -193,25 +193,16 @@ int main(int argc, char** argv)
     send_goal_options.result_callback =
         [&](const rclcpp_action::ClientGoalHandle<deep_grasp_msgs::action::CylinderSegment>::WrappedResult&
                 wrapped_result) { result = *wrapped_result.result; };
-    ac->async_send_goal(goal, send_goal_options);
+    auto cylinder_segment_result = ac->async_send_goal(goal, send_goal_options);
+    // Wait until timeout or result received.
+   if (cylinder_segment_result.wait_for(std::chrono::seconds(10)) == std::future_status::timeout)
+    {
+      RCLCPP_ERROR(node->get_logger(), "Failed to call cylinder segment action");
+      return 1;
+    }
 
-    // wait for the action to return
-    //  bool finished_before_timeout = ac.waitForResult(rclcpp::Duration(180.0));
-
-    // if (finished_before_timeout)
-    // {
-
-    //   RCLCPP_INFO(node->get_logger(),"Action finished: %s", state.toString().c_str());
-    // }
-    // else {
-    //   RCLCPP_INFOnode->get_logger(),"Action did not finish before the time out.");
-
-    //   //exit
-    //   return 0;
-    // }
-
-    // RCLCPP_WARN(node->get_logger(), "X,Y %s RESULT: (%.2f, %.2f)", result.com.header.frame_id.c_str(),
-    // result.com.pose.position.x, result.com.pose.position.y);
+    RCLCPP_WARN(node->get_logger(), "X,Y %s RESULT: (%.2f, %.2f)", result.com.header.frame_id.c_str(),
+    result.com.pose.position.x, result.com.pose.position.y);
   }
 
   for (std::string obj : spawn_objs)
@@ -236,6 +227,7 @@ int main(int argc, char** argv)
                 cobj.primitive_poses.back().position.z);
     spawnObject(psi, cobj);
     // sleep for half a second
+    rclcpp::sleep_for(std::chrono::milliseconds(500));
     deep_pick_place_task.loadParameters(obj, prev_obj);
     prev_obj = obj;
 

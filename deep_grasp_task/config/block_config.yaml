@@ -1,6 +1,7 @@
 # Total planning attempts
 max_solutions: 10
 execute: true
+action_name: "sample_grasp_poses"
 # move_group:
 #   capabilities: "move_group/ExecuteTaskSolutionCapability"
 
@@ -70,12 +71,12 @@ table_pose: [0.4, 0,0.00001, 0, 0, 0]
 # table_pose: [0.5, 0, 0, 0, 0, 0]
 
 # Gripper grasp frame transform [x,y,z,r,p,y]
-grasp_frame_transform: [0.04, 0, 0, 0, -1.57, 0]
-
+# grasp_frame_transform: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+grasp_frame_transform: [0.05, 0, 0, 0, -1.57, 0]
 # Place pose [x,y,z,r,p,y]
 # place_pose: [0.5, 0.3, 0, 0, 0, 0]
 
-place_surface_offset: 0.005 # place offset from table
+place_surface_offset: 0.002 # place offset from table
 
 # Valid distance range when approaching an object for picking
 approach_object_min_dist: 0.05

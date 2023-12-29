@@ -1,23 +1,36 @@
 <?xml version="1.0" encoding="utf-8"?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="bar_clamp">
-  <link name="object_link">
+  <xacro:arg name="x" default="0" />
+  <xacro:arg name="y" default="0" />
+  <xacro:arg name="z" default="0" />
+  <xacro:arg name="color" default="black" />
+  <link name="barclamp">
     <visual>
+      <origin xyz="$(arg x) $(arg y) $(arg z)" />
       <geometry>
-	      <mesh filename="package://deep_grasp_task/meshes/objects/bar_clamp.dae"/>
+        <mesh filename="$(find deep_grasp_task)/meshes/objects/bar_clamp.dae" />
 	    </geometry>
     </visual>
     <collision>
+      <origin xyz="$(arg x) $(arg y) $(arg z)" />
       <geometry>
-        <mesh filename="package://deep_grasp_task/meshes/objects/bar_clamp.dae"/>
+        <mesh filename="$(find deep_grasp_task)/meshes/objects/bar_clamp.dae" />
 	    </geometry>
     </collision>
 	<inertial>
-		<mass value="0.03"/>
-		<inertia ixx="0.05" iyy="0.05" izz="0.05" ixy="0.0" ixz="0.0" iyz="0.0"/>
+      <mass value="0.03" />
+      <inertia ixx="0.05" iyy="0.05" izz="0.05" ixy="0.0" ixz="0.0" iyz="0.0" />
 	</inertial>
   </link>
 
-  <gazebo reference="object_link">
+  <gazebo reference="barclamp">
+    <visual>
+      <material>
+        <xacro:include filename="$(find deep_grasp_task)/urdf/colors.urdf.xacro" />
+        <xacro:color color="$(arg color)" />
+      </material>
+
+    </visual>
       <dampingFactor>0.005</dampingFactor>
       <kp>1000000</kp>
       <kd>1.0</kd>

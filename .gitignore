@@ -10,4 +10,4 @@ srv_gen/
 !*.c
 !Makefile
 pcl-pcl*/
-datasets/
+datasets2

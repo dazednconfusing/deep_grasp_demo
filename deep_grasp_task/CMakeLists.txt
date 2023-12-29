@@ -23,6 +23,7 @@ find_package(tf2_ros REQUIRED)
 find_package(tf2_eigen REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
+find_package(dgl_ros_interfaces REQUIRED)
 find_package(deep_grasp_msgs REQUIRED)
 
 # ##################################
@@ -51,11 +52,11 @@ add_library(action_client SHARED
   src/stages/deep_grasp_pose.cpp)
 
 ament_target_dependencies(action_client
-  moveit_task_constructor_core moveit_visual_tools rclcpp deep_grasp_msgs
+  moveit_task_constructor_core moveit_visual_tools rclcpp dgl_ros_interfaces
 )
 
 ament_target_dependencies(deep_grasp_task
-  moveit_task_constructor_core moveit_visual_tools rclcpp deep_grasp_msgs EIGEN3
+  moveit_task_constructor_core moveit_visual_tools rclcpp dgl_ros_interfaces EIGEN3
 )
 target_link_libraries(deep_grasp_task action_client)
 
@@ -115,6 +116,7 @@ install(DIRECTORY
   urdf
   worlds
   config
+  meshes
   DESTINATION share/${PROJECT_NAME}
 )
 

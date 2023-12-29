@@ -1,91 +1,3 @@
-/*********************************************************************
- * Software License Agreement (BSD License)
- *
- *  Copyright (c) 2018, Ridhwan Luthra.
- *  All rights reserved.
- *
- *  Redistribution and use in source and binary forms, with or without
- *  modification, are permitted provided that the following conditions
- *  are met:
- *
- *   * Redistributions of source code must retain the above copyright
- *     notice, this list of conditions and the following disclaimer.
- *   * Redistributions in binary form must reproduce the above
- *     copyright notice, this list of conditions and the following
- *     disclaimer in the documentation and/or other materials provided
- *     with the distribution.
- *   * Neither the name of Ridhwan Luthra nor the names of its
- *     contributors may be used to endorse or promote products derived
- *     from this software without specific prior written permission.
- *
- *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- *  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- *  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- *  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
- *  COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
- *  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
- *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- *  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- *  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
- *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- *  POSSIBILITY OF SUCH DAMAGE.
- *********************************************************************/
-
-/* Author: Ridhwan Luthra */
-
-#include <rclcpp/rclcpp.hpp>
-#include <sensor_msgs/msg/point_cloud2.hpp>
-#include <pcl_conversions/pcl_conversions.h>
-#include <pcl/filters/passthrough.h>
-#include <pcl/filters/extract_indices.h>
-#include <pcl/features/normal_3d.h>
-#include <pcl/segmentation/sac_segmentation.h>
-#include <rclcpp_action/rclcpp_action.hpp>
-#include <moveit/planning_scene_interface/planning_scene_interface.h>
-#include <moveit_msgs/msg/collision_object.hpp>
-#include <deep_grasp_msgs/action/cylinder_segment.hpp>
-#include <tf2_ros/transform_listener.h>
-#include "tf2_ros/buffer.h"
-#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
-constexpr char LOGNAME[] = "cylinder_segment";
-
-/*********************************************************************
- * Software License Agreement (BSD License)
- *
- *  Copyright (c) 2018, Ridhwan Luthra.
- *  All rights reserved.
- *
- *  Redistribution and use in source and binary forms, with or without
- *  modification, are permitted provided that the following conditions
- *  are met:
- *
- *   * Redistributions of source code must retain the above copyright
- *     notice, this list of conditions and the following disclaimer.
- *   * Redistributions in binary form must reproduce the above
- *     copyright notice, this list of conditions and the following
- *     disclaimer in the documentation and/or other materials provided
- *     with the distribution.
- *   * Neither the name of Ridhwan Luthra nor the names of its
- *     contributors may be used to endorse or promote products derived
- *     from this software without specific prior written permission.
- *
- *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- *  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- *  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- *  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
- *  COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
- *  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
- *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- *  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- *  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
- *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- *  POSSIBILITY OF SUCH DAMAGE.
- *********************************************************************/
-
-/* Author: Ridhwan Luthra */
-
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
 #include <pcl_conversions/pcl_conversions.h>
@@ -97,7 +9,8 @@ constexpr char LOGNAME[] = "cylinder_segment";
 #include <moveit_msgs/msg/collision_object.hpp>
 #include <deep_grasp_msgs/action/cylinder_segment.hpp>
 #include <tf2_ros/transform_listener.h>
-#include "tf2_ros/buffer.h"
+#include <tf2_ros/buffer.h>
+#include <tf2_ros/create_timer_ros.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #include <rclcpp_action/rclcpp_action.hpp>
 
@@ -107,7 +20,7 @@ using GoalHandleSharedPtr =
 class CylinderSegmentor
 {
 public:
-  CylinderSegmentor(rclcpp::Node::SharedPtr nh);
+  CylinderSegmentor(rclcpp::Node::SharedPtr action_node, rclcpp::Node::SharedPtr subscription_node);
   void loadParameters();
   void init();
 
@@ -117,7 +30,7 @@ public:
   /** \brief Given the pointcloud containing just the cylinder,
       compute its center point and its height and store in cylinder_params.
       @param cloud - point cloud containing just the cylinder. */
-  void extractLocationHeight(const pcl::PointCloud<pcl::PointXYZ>::Ptr& cloud);
+  void extractLocatioaction_nodeheight(const pcl::PointCloud<pcl::PointXYZ>::Ptr& cloud);
   /** \brief Given a pointcloud extract the ROI defined by the user.
       @param cloud - Pointcloud whose ROI needs to be extracted. */
   void passThroughFilter(const pcl::PointCloud<pcl::PointXYZ>::Ptr& cloud);
@@ -153,11 +66,11 @@ public:
                                           std::shared_ptr<const deep_grasp_msgs::action::CylinderSegment_Goal> goal);
   void handle_accepted(const GoalHandleSharedPtr& goal_handle);
   void cloudCB(const sensor_msgs::msg::PointCloud2& input);
+  void execute(const GoalHandleSharedPtr& goal_handle);
 
 private:
-  // BEGIN_SUB_TUTORIAL param_struct
-  // There are 4 fields and a total of 7 parameters used to define this.
-  rclcpp::Node::SharedPtr nh_;
+  rclcpp::Node::SharedPtr action_node_;
+  rclcpp::Node::SharedPtr subscription_node_;
   moveit::planning_interface::PlanningSceneInterface planning_scene_interface_;
   rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr subscription_;
 
@@ -172,7 +85,6 @@ private:
     /* Height of the cylinder. */
     double height;
   };
-  // Declare a variable of type AddCylinderParams and store relevant values from ModelCoefficients.
   AddCylinderParams cylinder_params_;
   bool goal_active_ = false;
   bool add_cylinder_ = false;
@@ -183,41 +95,46 @@ private:
   deep_grasp_msgs::action::CylinderSegment::Result::SharedPtr result_;
   std::unique_ptr<tf2_ros::Buffer> tfBuffer_;
   std::shared_ptr<tf2_ros::TransformListener> tfListener_;
+  std::shared_ptr<tf2_ros::CreateTimerROS> timer_interface_;
 
-  // END_SUB_TUTORIAL
 };
 
-CylinderSegmentor::CylinderSegmentor(rclcpp::Node::SharedPtr nh) : nh_(nh)
+CylinderSegmentor::CylinderSegmentor(rclcpp::Node::SharedPtr action_node, rclcpp::Node::SharedPtr subscription_node)
+  : action_node_(action_node), subscription_node_(subscription_node)
 {
-  tfBuffer_ = std::make_unique<tf2_ros::Buffer>(nh_->get_clock());
+  tfBuffer_ = std::make_unique<tf2_ros::Buffer>(action_node_->get_clock());
   tfListener_ = std::make_shared<tf2_ros::TransformListener>(*tfBuffer_);
+  timer_interface_ = std::make_shared<tf2_ros::CreateTimerROS>(action_node_->get_node_base_interface(),
+                                                               action_node_->get_node_timers_interface());
+  tfBuffer_->setCreateTimerInterface(timer_interface_);
+  result_ = std::make_shared<deep_grasp_msgs::action::CylinderSegment::Result>();
+
   loadParameters();
   init();
 }
 
 void CylinderSegmentor::loadParameters()
 {
-  RCLCPP_INFO(nh_->get_logger(), "Loading cylinder segment params");
+  RCLCPP_INFO(action_node_->get_logger(), "Loading cylinder segment params");
 
-  nh_->get_parameter("goal_active", goal_active_);
-  nh_->get_parameter("add_cylinder", add_cylinder_);
+  action_node_->get_parameter("goal_active", goal_active_);
+  action_node_->get_parameter("add_cylinder", add_cylinder_);
 }
 
 void CylinderSegmentor::init()
 {
-  // action server
   using namespace std::placeholders;
   server_ = rclcpp_action::create_server<deep_grasp_msgs::action::CylinderSegment>(
-      nh_, "cylinder_segment", std::bind(&CylinderSegmentor::handle_goal, this, _1, _2),
+      action_node_, "cylinder_segment", std::bind(&CylinderSegmentor::handle_goal, this, _1, _2),
       std::bind(&CylinderSegmentor::handle_cancel, this, _1), std::bind(&CylinderSegmentor::handle_accepted, this, _1));
 
-  subscription_ = nh_->create_subscription<sensor_msgs::msg::PointCloud2>(
-      "camera/depth/color/points", 10, std::bind(&CylinderSegmentor::cloudCB, this, _1));
+  subscription_ = subscription_node_->create_subscription<sensor_msgs::msg::PointCloud2>(
+      "/rgbd_camera/points", 10, std::bind(&CylinderSegmentor::cloudCB, this, _1));
 }
 
 rclcpp_action::CancelResponse CylinderSegmentor::handle_cancel(const GoalHandleSharedPtr goal_handle)
 {
-  RCLCPP_INFO(nh_->get_logger(), "Received request to cancel goal");
+  RCLCPP_INFO(action_node_->get_logger(), "Received request to cancel goal");
   (void)goal_handle;
   return rclcpp_action::CancelResponse::ACCEPT;
 }
@@ -226,17 +143,25 @@ rclcpp_action::GoalResponse CylinderSegmentor::handle_goal(
     const rclcpp_action::GoalUUID& uuid, std::shared_ptr<const deep_grasp_msgs::action::CylinderSegment_Goal> goal)
 {
   (void)uuid, (void)goal;
-  RCLCPP_INFO(nh_->get_logger(), "New goal accepted");
+  RCLCPP_INFO(action_node_->get_logger(), "New goal accepted");
   goal_active_ = true;
+  return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
+}
 
-  while (!new_cylinder_found_)
+void CylinderSegmentor::execute(const GoalHandleSharedPtr& goal_handle)
+{
+  rclcpp::Rate loop_rate(1);
+  while (!new_cylinder_found_ && rclcpp::ok())
   {
+    RCLCPP_INFO_ONCE(action_node_->get_logger(), "Waiting for new cylinder");
   }
+  RCLCPP_INFO(action_node_->get_logger(),
+              new_cylinder_found_ ? "New cylinder found2: true" : "new cylinder found2 false");
   goal_active_ = false;
   new_cylinder_found_ = false;
 
   geometry_msgs::msg::PoseStamped p;
-  p.header.frame_id = "locobot_camera_optical_link";
+  p.header.frame_id = "camera_locobot_link";
 
   // Setting the position of cylinder.
   p.pose.position.x = cylinder_params_.center_pt[0];
@@ -255,67 +180,73 @@ rclcpp_action::GoalResponse CylinderSegmentor::handle_goal(
   p.pose.orientation.z = axis.z() * sin(angle / 2);
   p.pose.orientation.w = cos(angle / 2);
 
-  RCLCPP_INFO(nh_->get_logger(), "com pose: ( %.2f %.2f %.2f)", p.pose.position.x, p.pose.position.y,
+  RCLCPP_INFO(action_node_->get_logger(), "com pose: ( %.2f %.2f %.2f)", p.pose.position.x, p.pose.position.y,
               p.pose.position.z);
 
   geometry_msgs::msg::TransformStamped tf_world_opt;
   try
   {
-    tf_world_opt = tfBuffer_->lookupTransform("world", "locobot_camera_depth_link", rclcpp::Time(0));
+    tfBuffer_->waitForTransform(
+        "world", "camera_locobot_link", action_node_->now(), rclcpp::Duration(5, 0),
+        [&tf_world_opt](const tf2_ros::TransformStampedFuture& tf) { tf_world_opt = tf.get(); });
 
     tf2::doTransform(p, result_->com, tf_world_opt);
-    RCLCPP_INFO(nh_->get_logger(), "%s com pose: ( %.2f %.2f %.2f)", result_->com.header.frame_id.c_str(),
+    RCLCPP_INFO(action_node_->get_logger(), "%s com pose: ( %.2f %.2f %.2f)", result_->com.header.frame_id.c_str(),
                 result_->com.pose.position.x, result_->com.pose.position.y, result_->com.pose.position.z);
     result_->com.pose.position.x += 0.01 * (int)(result_->com.pose.position.x > 0);
     result_->com.pose.position.y += 0.005 * (int)(result_->com.pose.position.y > 0);
   }
   catch (tf2::TransformException& ex)
   {
-    RCLCPP_WARN(nh_->get_logger(), "%s", ex.what());
-    RCLCPP_WARN(nh_->get_logger(), "TF FAILED!!\n");
-    return rclcpp_action::GoalResponse::REJECT;
+    RCLCPP_ERROR(action_node_->get_logger(), "%s", ex.what());
+    RCLCPP_ERROR(action_node_->get_logger(), "TF FAILED!!\n");
+    goal_handle->abort(result_);
   }
-  return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
+  if (rclcpp::ok())
+  {
+    goal_handle->succeed(result_);
+  }
 }
-
 void CylinderSegmentor::handle_accepted(const GoalHandleSharedPtr& goal_handle)
 {
-  goal_handle->succeed(result_);
-  // this needs to return quickly to avoid blocking the executor, so spin up a new thread
+  std::thread{ std::bind(&CylinderSegmentor::execute, this, std::placeholders::_1), goal_handle }.detach();
 }
 
 void CylinderSegmentor::cloudCB(const sensor_msgs::msg::PointCloud2& input)
 {
   if (goal_active_)
   {
-    RCLCPP_INFO(nh_->get_logger(), "Goal active extracting cylinder");
-    // BEGIN_SUB_TUTORIAL callback
-    //
-    // Perception Related
-    // ^^^^^^^^^^^^^^^^^^
+  
+
+    RCLCPP_INFO(subscription_node_->get_logger(), "Goal active extracting cylinder");
+
     // This section uses a standard PCL-based processing pipeline to estimate a cylinder's pose in the point cloud.
     //
     // First, we convert from sensor_msgs to pcl::PointXYZ which is needed for most of the processing.
     pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>);
     pcl::fromROSMsg(input, *cloud);
+    RCLCPP_WARN_STREAM(subscription_node_->get_logger(), "cloud1 : " << *cloud);
     // Use a passthrough filter to get the region of interest.
     // The filter removes points outside the specified range.
-    passThroughFilter(cloud);
+    // passThroughFilter(cloud);
+      RCLCPP_WARN_STREAM(subscription_node_->get_logger(), "cloud2 : " << *cloud);
     // Compute point normals for later sample consensus step.
     pcl::PointCloud<pcl::Normal>::Ptr cloud_normals(new pcl::PointCloud<pcl::Normal>);
     computeNormals(cloud, cloud_normals);
     // inliers_plane will hold the indices of the point cloud that correspond to a plane.
     pcl::PointIndices::Ptr inliers_plane(new pcl::PointIndices);
+
     // Detect and remove points on the (planar) surface on which the cylinder is resting.
     removePlaneSurface(cloud, inliers_plane);
+      RCLCPP_WARN_STREAM(subscription_node_->get_logger(), "cloud3 : " << *cloud);
     // Remove surface points from normals as well
     extractNormals(cloud_normals, inliers_plane);
+      RCLCPP_WARN_STREAM(subscription_node_->get_logger(), "cloud4 : " << *cloud);
     // ModelCoefficients will hold the parameters using which we can define a cylinder of infinite length.
-    // It has a public attribute |code_start| values\ |code_end| of type |code_start| std::vector<float>\ |code_end|\ .
-    // |br|
-    // |code_start| values[0-2]\ |code_end| hold a point on the center line of the cylinder. |br|
-    // |code_start| values[3-5]\ |code_end| hold direction vector of the z-axis. |br|
-    // |code_start| values[6]\ |code_end| is the radius of the cylinder.
+    // It has a public attribute values of type std::vector<float> .
+    // values[0-2] hold a point on the center line of the cylinder. 
+    // values[3-5] hold direction vector of the z-axis.
+    //  values[6] is the radius of the cylinder.
     pcl::ModelCoefficients::Ptr coefficients_cylinder(new pcl::ModelCoefficients);
     /* Extract the cylinder using SACSegmentation. */
     extractCylinder(cloud, coefficients_cylinder, cloud_normals);
@@ -324,27 +255,16 @@ void CylinderSegmentor::cloudCB(const sensor_msgs::msg::PointCloud2& input)
     // END_SUB_TUTORIAL
     if (cloud->points.empty() || coefficients_cylinder->values.size() != 7)
     {
-      RCLCPP_ERROR(nh_->get_logger(), "Can't find the cylindrical component.");
+      RCLCPP_ERROR(subscription_node_->get_logger(), "Can't find the cylindrical component.");
       internal_found_new_cylinder = false;
       return;
     }
     else
     {
       internal_found_new_cylinder = true;
-      RCLCPP_INFO(nh_->get_logger(), "Detected Cylinder - Adding CollisionObject to PlanningScene");
+      RCLCPP_INFO(subscription_node_->get_logger(), "Detected Cylinder - Adding CollisionObject to PlanningScene");
     }
 
-    // BEGIN_TUTORIAL
-    // CALL_SUB_TUTORIAL callback
-    //
-    // Storing Relevant Cylinder Values
-    // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    // The information that we have in |code_start| coefficients_cylinder\ |code_end| is not enough to define our
-    // cylinder.
-    // It does not have the actual location of the cylinder nor the actual height. |br|
-    // We define a struct to hold the parameters that are actually needed for defining a collision object completely.
-    // |br|
-    // CALL_SUB_TUTORIAL param_struct
     /* Store the radius of the cylinder. */
     cylinder_params_.radius = coefficients_cylinder->values[6];
     /* Store direction vector of z-axis of cylinder. */
@@ -352,31 +272,21 @@ void CylinderSegmentor::cloudCB(const sensor_msgs::msg::PointCloud2& input)
     cylinder_params_.direction_vec[1] = coefficients_cylinder->values[4];
     cylinder_params_.direction_vec[2] = coefficients_cylinder->values[5];
     //
-    // Extracting Location and Height
-    // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     // Compute the center point of the cylinder using standard geometry
-    extractLocationHeight(cloud);
+    extractLocatioaction_nodeheight(cloud);
     new_cylinder_found_ = internal_found_new_cylinder;
-    // CALL_SUB_TUTORIAL extract_location_height
-    // Use the parameters extracted to add the cylinder to the planning scene as a collision object.
 
     if (add_cylinder_)
     {
       addCylinder();
     }
-    // CALL_SUB_TUTORIAL add_cylinder
-    // END_TUTORIAL
   }
 }
 
 /** \brief Given the parameters of the cylinder add the cylinder to the planning scene. */
 void CylinderSegmentor::addCylinder()
 {
-  // BEGIN_SUB_TUTORIAL add_cylinder
-  //
-  // Adding Cylinder to Planning Scene
-  // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  // Define a collision object ROS message.
+
   moveit_msgs::msg::CollisionObject collision_object;
   collision_object.header.frame_id = "locobot_camera_depth_link";
   collision_object.id = "cylinder";
@@ -421,26 +331,25 @@ void CylinderSegmentor::addCylinder()
 /** \brief Given the pointcloud containing just the cylinder,
     compute its center point and its height and store in cylinder_params.
     @param cloud - point cloud containing just the cylinder. */
-void CylinderSegmentor::extractLocationHeight(const pcl::PointCloud<pcl::PointXYZ>::Ptr& cloud)
+void CylinderSegmentor::extractLocatioaction_nodeheight(const pcl::PointCloud<pcl::PointXYZ>::Ptr& cloud)
 {
   double max_angle_y = -std::numeric_limits<double>::infinity();
   double min_angle_y = std::numeric_limits<double>::infinity();
 
   double lowest_point[3] = { 0.0, 0.0, 0.0 };
   double highest_point[3] = { 0.0, 0.0, 0.0 };
-  // BEGIN_SUB_TUTORIAL extract_location_height
   // Consider a point inside the point cloud and imagine that point is formed on a XY plane where the perpendicular
-  // distance from the plane to the camera is Z. |br|
-  // The perpendicular drawn from the camera to the plane hits at center of the XY plane. |br|
-  // We have the x and y coordinate of the point which is formed on the XY plane. |br|
-  // X is the horizontal axis and Y is the vertical axis. |br|
+  // distance from the plane to the camera is Z. 
+  // The perpendicular drawn from the camera to the plane hits at center of the XY plane. 
+  // We have the x and y coordinate of the point which is formed on the XY plane. 
+  // X is the horizontal axis and Y is the vertical axis. 
   // C is the center of the plane which is Z meter away from the center of camera and A is any point on the plane.
-  // |br|
-  // Now we know Z is the perpendicular distance from the point to the camera. |br|
+  // 
+  // Now we know Z is the perpendicular distance from the point to the camera. 
   // If you need to find the  actual distance d from the point to the camera, you should calculate the hypotenuse-
-  // |code_start| hypot(point.z, point.x);\ |code_end| |br|
-  // angle the point made horizontally- |code_start| atan2(point.z,point.x);\ |code_end| |br|
-  // angle the point made Vertically- |code_start| atan2(point.z, point.y);\ |code_end| |br|
+  //  hypot(point.z, point.x)
+  // angle the point made horizontally-  atan2(point.z,point.x)
+  // angle the point made Vertically-  atan2(point.z, point.y)
   // Loop over the entire pointcloud.
   for (auto const point : cloud->points)
   {
@@ -470,18 +379,28 @@ void CylinderSegmentor::extractLocationHeight(const pcl::PointCloud<pcl::PointXY
   cylinder_params_.height =
       sqrt(pow((lowest_point[0] - highest_point[0]), 2) + pow((lowest_point[1] - highest_point[1]), 2) +
            pow((lowest_point[2] - highest_point[2]), 2));
-  // END_SUB_TUTORIAL
 }
 
 /** \brief Given a pointcloud extract the ROI defined by the user.
     @param cloud - Pointcloud whose ROI needs to be extracted. */
 void CylinderSegmentor::passThroughFilter(const pcl::PointCloud<pcl::PointXYZ>::Ptr& cloud)
 {
+  geometry_msgs::msg::TransformStamped tf_camera_opt;
+  geometry_msgs::msg::Point32 zmin, zmin_out;
+  zmin.z = 0.3;
+  tfBuffer_->waitForTransform(
+    "locobot_camera_depth_link", "camera_locobot_link", action_node_->now(), rclcpp::Duration(5, 0),
+    [&tf_camera_opt](const tf2_ros::TransformStampedFuture& tf) { tf_camera_opt = tf.get(); });
+  tf2::doTransform(zmin, zmin_out, tf_camera_opt);
   pcl::PassThrough<pcl::PointXYZ> pass;
   pass.setInputCloud(cloud);
+  for (auto& p : cloud->points) {
+    RCLCPP_ERROR_ONCE(subscription_node_->get_logger(), "point: %f %f %f", p.x, p.y, p.z);
+  }
+  RCLCPP_ERROR_ONCE(subscription_node_->get_logger(), "zmin: %f", zmin_out.z);
   pass.setFilterFieldName("z");
   // min and max values in z axis to keep
-  pass.setFilterLimits(0.35, 1.15);
+  pass.setFilterLimits(0, 6);
   pass.filter(*cloud);
 }
 
@@ -539,6 +458,7 @@ void CylinderSegmentor::removePlaneSurface(const pcl::PointCloud<pcl::PointXYZ>:
   /* Remove the planar inliers, extract the rest */
   extract_indices.setNegative(true);
   extract_indices.filter(*cloud);
+  
 }
 
 /** \brief Given the pointcloud, pointer to pcl::ModelCoefficients and point normals extract the cylinder from the
@@ -587,12 +507,13 @@ int main(int argc, char** argv)
   node_options.automatically_declare_parameters_from_overrides(true);
   node_options.allow_undeclared_parameters(true);
   auto node = rclcpp::Node::make_shared("cylinder_segment", node_options);
-  RCLCPP_INFO(node->get_logger(), "Init deep_grasp_demo");
-  std::thread spinning_thread([node] { rclcpp::spin(node); });
+  auto subscription_node = rclcpp::Node::make_shared("cylinder_segment_subscription", node_options);
   // Start the segmentor
-  CylinderSegmentor segmentor(node);
-  spinning_thread.join();
+  std::thread action_thread([node] { rclcpp::spin(node); });
+  std::thread subscription_thread([subscription_node] { rclcpp::spin(subscription_node); });
+  CylinderSegmentor segmentor(node, subscription_node);
+  action_thread.join();
+  subscription_thread.join();
   rclcpp::shutdown();
   return 0;
-  //
 }

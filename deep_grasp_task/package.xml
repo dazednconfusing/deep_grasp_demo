@@ -13,6 +13,7 @@
   <depend>moveit_visual_tools</depend>
   <depend>rclcpp</depend>
   <depend>deep_grasp_msgs</depend>
+  <depend>dgl_ros_interfaces</depend>
   <depend>pcl_ros</depend>
   <depend>pcl_conversions</depend>
   <test_depend>ament_lint_auto</test_depend>

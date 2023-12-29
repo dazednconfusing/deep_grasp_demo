@@ -36,7 +36,7 @@
  */
 
 #include <deep_grasp_task/deep_pick_place_task.h>
-#include <deep_grasp_msgs/action/sample_grasp_poses.hpp>
+#include <dgl_ros_interfaces/action/sample_grasp_poses.hpp>
 #include <moveit/task_constructor/solvers/pipeline_planner.h>
 #include <deep_grasp_task/stages/deep_grasp_pose.h>
 #include <iostream>
@@ -360,7 +360,7 @@ void DeepPickPlaceTask::init()
     {
       if (deep_grasps_) {
         std::string stage_name = "generate DEEP grasp pose";
-        auto dg = std::make_unique<stages::DeepGraspPose<deep_grasp_msgs::action::SampleGraspPoses >>(
+        auto dg = std::make_unique<stages::DeepGraspPose<dgl_ros_interfaces::action::SampleGraspPoses >>(
           action_name_, stage_name, 0, 0);
 
         std::unique_ptr<stages::ComputeIK> wrapper = GenerateGraspWrapper(std::move(dg), hand_open_pose_, object, Eigen::Isometry3d::Identity(), hand_frame_, current_state_ptr);
